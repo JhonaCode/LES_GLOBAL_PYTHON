@@ -106,7 +106,6 @@ def temporal_ex_hours_mpas(exp,exp2,exp3,di,df,variables,variables2,variables3,e
             d0=-1
             day1_0=day_0
 
-
             tomean = ex.sel(Time=slice(di,df))
 
             for d in tomean.Time: 

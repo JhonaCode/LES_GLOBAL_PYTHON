@@ -217,6 +217,42 @@ def default_temporal_mpas(ex,var,vname,hours,lim,var_to,color,explabel1,explabel
     return lim,var_to,color,explabel1,explabel2,leg_loc,show
 
 ##################################
+def default_values_sam_diurnal(ex,vname,z,lim,alt,var_to,color,explabel1,explabel2,leg_loc,diurnal,show): 
+
+    name    =   str(ex.name.values)#+'_'+dates[0]
+
+    maxv=np.min(ex[vname].values)#.max
+    minv=np.max(ex[vname].values)#.min
+
+
+    minh=np.min(z[:]/1000.0)
+    maxh=np.max(z[:]/1000.0)
+
+
+    lim.append([minv,maxv])
+    alt.append([minh,maxh])         
+
+    var_to.append(1)
+
+
+    color.append('Red')
+
+    explabel1.append('')
+    explabel2.append('')
+
+    ll1=[(maxv-minv)/4.0+minv,maxh*0.90]
+    #legent loc
+    l1         = (ll1,ll1,['upper right',False],['%s'%vname,True],['z',True],[1,1])
+
+    leg_loc.append(l1)
+
+    diurnal.append('True')
+
+    show.append('True')
+
+    return lim,alt,var_to,color,explabel1,explabel2,leg_loc,diurnal,show
+
+##################################
 def default_values_mpas(ex,var,vname,z,lim,alt,var_to,color,explabel1,explabel2,leg_loc,diurnal,show): 
 
     name=ex.name.values
