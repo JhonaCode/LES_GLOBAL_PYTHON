@@ -76,7 +76,8 @@ def cartopy_plot(data,varname,date_str=[],lats=[],lons=[],lev=[],vmulti=[],bcolo
 
 
     if cbar: 
-        CB=fig.colorbar(filled, orientation='vertical',shrink=0.5)
+        #CB=fig.colorbar(filled, orientation='vertical',shrink=0.5)
+        CB=plt.colorbar(var, orientation='vertical',shrink=0.5)
         CB.set_ticks(levels)
 
         if units:
@@ -267,6 +268,7 @@ def narrow_q(q,plotname='',figname='',out='',label=''):
                
     return fig     
 
+
 def ajust_var(data,varname,date_str=[],lev=[]):
 
     global pars
@@ -355,6 +357,7 @@ def def_axis_states(ax):
 
     return ax
 
+
 def axis_def(ax,var,bcolor,lats,lat,lons,lon):
 
     if lats:
@@ -437,3 +440,5 @@ def axis_def(ax,var,bcolor,lats,lat,lons,lon):
     #)
 
     return ax,levels,latitude,longitude
+
+

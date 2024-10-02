@@ -10,8 +10,10 @@ import xarray as xr
 
 import pandas as pd
 
+import uxarray as ux
 
-def gerate_data(dis,dfs,nhpull):
+
+def generate_data(dis,dfs,nhpull):
 
     #2014020100
     date_format = '%Y%m%d%H%M'
@@ -43,6 +45,7 @@ def gerate_data(dis,dfs,nhpull):
     
     for i in range(0,int(nh)+1,nhpull):   #+1 for the last day 
     
+        print(i)
         ncfile=days.strftime(date_format_out)
         ncfiles.append(ncfile)
         days=days+deltat
@@ -72,6 +75,7 @@ def gerate_data_mpas(dis,dfs,nhpull):
     year    =di.year
 
     date_format_mpas = '%Y-%m-%d_%H.%M'+'.00'
+    #default='%s/diag.2014-09-02_03.00.00.nc'%path,
     
     nh =int(d.total_seconds()//(3600))
 
@@ -93,6 +97,32 @@ def gerate_data_mpas(dis,dfs,nhpull):
         days=days+deltat
 
     return ncfiles 
+
+def concatenate_uxr(grid,ncfiles,path,header,name,UTC=0):
+
+    nc_files=[path +'/%s'%(header)+ d +'.nc' for d in ncfiles] 
+
+
+    #mm=ux.open_mfdataset(grid,nc_files,combine='nested', concat_dim='time')
+    mm=ux.open_mfdataset(grid,nc_files,combine='nested', concat_dim='Time')
+
+    ltime=pd.to_datetime(mm.Time)+dt.timedelta(hours=UTC)
+
+    mm['name']=name
+
+    mm['netshsf']=mm['acswdnb']-mm['acswupb']
+
+    mm['netlwsf']=mm['aclwdnb']-mm['aclwupb']
+
+    mm['netsf']  =mm['netshsf']-mm['netlwsf']
+
+    ##########################################
+
+    mm['netsf_dw']=mm['acswdnb']-mm['aclwdnb']
+
+    mm['Time']=ltime
+
+    return mm
 
 def concatenate(ncfiles,path,header,name,UTC=0):
 

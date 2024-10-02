@@ -38,6 +38,28 @@ def data_load_xr(path,name,calendar):
 
     return exp 
 
+def data_load_xr_time(path,name,calendar):
+
+    exp            =  xr.open_dataset(path, engine='netcdf4')
+    exp['name']    =  name
+
+    exp['netsf']   =  exp['SWNS']-exp['LWNS']
+    exp['netsf_dw']=  exp['SWDS']-exp['LWDS']
+
+    #date_format = '%Y%m%d%H'
+    ##to add the minutes to the original date
+    #dis=date[0]#+'00'
+    #dfs=date[1]#+'00'
+    #di=dt.datetime.strptime(dis, date_format)
+    #df=dt.datetime.strptime(dfs, date_format)
+
+    ##initial hour
+    #hi=di.hour
+    ##final hour
+    #hf=df.hour
+
+    return exp 
+
 
 #Function to know 
 #the data interval to make 

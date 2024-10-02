@@ -18,7 +18,8 @@ import  sam_python.figure_own          as fown
 
 import  sam_python.campain_data        as cd
 
-from    sam_python.plotparameters      import *
+import  sam_python.plotparameters      as pp
+#from    sam_python.plotparameters      import *
 
 #from    files_direction     import file_fig 
 
@@ -129,11 +130,16 @@ def main_plot_diurnal_new(data,ch,date,z,alt,lim,color,name,explabel,leg_loc,diu
     #mean diurnal function 
     meanvar,hour = diurnal_main(data,z,hi,hf,ch)
 
-    size_wg = 0.28
-    size_wg = 0.33
-    size_hf = 1.50
+    #size_wg = 0.28
+    #size_wg = 0.33
+    #size_hf = 1.50
 
-    plotsize(size_wg,size_hf, 0.0,'diurnal')
+    #plotsize(size_wg,size_hf, 0.0,'diurnal')
+
+    size_wg = leg_loc[5][0]
+    size_hf = leg_loc[5][1]
+
+    pp.plotsize(size_wg,size_hf, 0.0,'diurnal')
 
     #To plot 
     fig  = plt.figure()

@@ -58,7 +58,6 @@ def label_plots(ax,legend,explabel1,explabel2):
     	plt.legend(frameon=False,loc=legend[2][0])
 
     return ax
-
 def diurnal_hours_mpas(ex,dates,variables,explabel1=[],explabel2=[],alt=[],lim=[],var_to=[],color=[],leg_loc=[],diurnal=[],show=[]): 
 
     ###To put 00 in the hour: 08,09,
@@ -94,6 +93,7 @@ def diurnal_hours_mpas(ex,dates,variables,explabel1=[],explabel2=[],alt=[],lim=[
             tall.append(date.values)
             hours.append(date.dt.hour.values)
 
+
             vlat        =   tomean[var].mean(dim='latitude') 
             vmean       =   vlat.mean(dim='longitude')
 
@@ -122,6 +122,75 @@ def diurnal_hours_mpas(ex,dates,variables,explabel1=[],explabel2=[],alt=[],lim=[
 
         figs,axis = main_plot_diurnal(var2plot,hours,z,alt[j],lim[j],color[j],[fig_label,explabel1[j],explabel2[j]],leg_loc[j],diurnal[j])
 
+
+        if show[j]:
+            plt.show()
+
+        j+=1
+
+    return 
+
+def diurnal_hours_mpas_ux(ex,dates,variables,explabel1=[],explabel2=[],alt=[],lim=[],var_to=[],color=[],leg_loc=[],diurnal=[],show=[]): 
+
+    ###To put 00 in the hour: 08,09,
+    ###nh  = [i for i in range(hi,hf,hour_step)]
+    ###hours = [f'{int(h):0>2}' for h in nh]
+
+    #Initial heigth in meters
+    z_sfc=60
+    #Variables to accumulate the variables in differents hours 
+
+    name    =   str(ex.name.values)+'_'+dates[0]
+
+    print("__%s__"%(name))
+
+    j=0
+    for var in variables:
+
+        print("___________________")
+        print("______%s_____"%(var))
+        print("___________________")
+
+        tall=[]
+        hours=[]
+        k=0
+        for d in dates: 
+     
+            print("___________________")
+            print(d)
+            print("___________________")
+
+            tomean = ex.sel(Time=[d],method='nearest')
+            date=tomean.Time[0]
+            tall.append(date.values)
+            hours.append(date.dt.hour.values)
+
+
+            vmean       =   tomean[var].mean(dim='n_face') 
+
+            tmean       =   ex.t_isobaric.mean(dim='n_face')
+            temperature =   tmean[0,::].values
+
+            pressure    =   ex.nIsoLevelsT[::].values
+
+            if(k==0):
+                #Pressure in Pa and T in K
+                z=ffc.get_height_from_pres(temperature, pressure, z_sfc)
+                vall=vmean
+            else:
+                vall=xr.merge([vmean,vall])
+
+            k+=1
+    
+
+        lim,alt,var_to,color,explabel1,explabel2,leg_loc,diurnal,show=df.default_values_mpas(ex,vall,var,z,lim,alt,var_to,color,explabel1,explabel2,leg_loc,diurnal,show)
+
+        var2plot=vall[var]*var_to[j]
+
+
+        fig_label=name+'_'+var
+
+        figs,axis = main_plot_diurnal(var2plot,hours,z,alt[j],lim[j],color[j],[fig_label,explabel1[j],explabel2[j]],leg_loc[j],diurnal[j])
 
         if show[j]:
             plt.show()
@@ -169,7 +238,7 @@ def main_plot_diurnal(vartoplot,hours,z,alt,lim,color,explabel,leg_loc,diurnal):
 
     label="%s"%(explabel[0])
 
-    plt.savefig('%s/diurnal_%s.pdf'%(pars.out_fig,explabel[0]),bbox_inches='tight',dpi=1000, format='pdf')
+    plt.savefig('%s/diurnal_%s.pdf'%(pars.out_fig,explabel[0]),bbox_inches='tight',dpi=200, format='pdf')
 
     return fig,ax
 

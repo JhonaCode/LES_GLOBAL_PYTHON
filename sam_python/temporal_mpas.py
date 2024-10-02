@@ -59,6 +59,151 @@ def label_plots(ax,legend,explabel1,explabel2):
 
     return ax
 
+def temporal_ex_hours_mpas_ux(exp,exp2,exp3,di,df,variables,variables2,variables3,explabel1=[],explabel2=[],lev=[],lim=[],var21=[],var22=[],var23=[],color=[],leg_loc=[],diurnal=[],show=[]): 
+
+    #Date to referece
+    year   =2024
+    month_0=1
+    day_0  =1
+
+    #date_format = '%Y%m%d%H'
+    date_format = '%Y%m%d%H'
+    di=dt.datetime.strptime(di, date_format)
+    df=dt.datetime.strptime(df, date_format)
+
+    j=0
+    for var in variables:
+
+        size_wg = leg_loc[j][5][0]
+        size_hf = leg_loc[j][5][1]
+
+        pp.plotsize(size_wg,size_hf, 0.0,'temporal')
+
+        #To plot 
+        fig     = plt.figure()
+        ax      = plt.axes()
+
+        print("___________________")
+        print("______%s_____"%(var))
+        print("___________________")
+
+
+        if lim:
+
+            lim[j][0]=dt.datetime.strptime(lim[j][0], date_format)
+            lim[j][1]=dt.datetime.strptime(lim[j][1], date_format)
+
+
+        i=0
+        for ex in exp: 
+            name    =   str(ex.name.values)
+            print("__%s__"%(name))
+
+            tall=[]
+            hours=[]
+            k=0
+            #To reference data change if change the day
+            d0=-1
+            day1_0=day_0
+
+            tomean = ex.sel(Time=slice(di,df))
+
+            for d in tomean.Time: 
+
+
+                tomean = ex.sel(Time=[d.values],method='nearest')
+
+
+                if lev: 
+                    #tomean= tomean.sel(level=[lev],method='nearest')
+                    tomean= tomean.sel(t_iso_levels=tomean.t_iso_levels.isin([lev]))
+                    #tomean= np.squeeze(tomean,1)
+
+                day=d.dt.day.values
+
+                #if day==d0+1:
+                #    day1_0+=1
+                #date,d0=down.data_to_reference(d,month_0,day1_0,year)
+                #print(date)
+                #print(d.values)
+                #hours.append(date)
+                #hours.append(date.values.astype('datetime64[s]'))
+                hours.append(d.values)
+
+
+                vmean        =   tomean[var].mean(dim='n_face') 
+
+                #pressure    =   ex.level[::].values
+
+                if(k==0):
+                    vall=vmean
+                else:
+                    vall=xr.merge([vmean,vall])
+
+                k+=1
+
+            var1plot=vall[var]*var21[j]
+
+            plt.plot(hours,var1plot.values ,label='%s'%(explabel1[j][i]),color=color[j][i],linewidth=1.0,alpha=1.0)#,dashes=line)
+
+            i+=1
+
+
+        for ex2 in exp2: 
+
+            #n0,n1   =   down.data_n(di+dt.timedelta(hours=-0),df,ex2.ltime.values.astype('datetime64[s]'))
+            n0,n1   =   down.data_n(di,df,ex2.ltime.values.astype('datetime64[s]'))
+
+            var2    =   variables2[j]
+
+            try:
+                var2plot=ex2[var2][n0:n1,0].values
+            except:
+                var2plot=ex2[var2][n0:n1].values
+
+            var2plot=   var2plot*var22[j]
+
+            time2   =   ex2.ltime[n0:n1].values
+
+            #hours   =   down.data_to_reference_vector(time2,day_0,month_0,year)
+            #plt.plot(hours,var2plot ,label='%s'%(explabel1[j][i]),color=color[j][i],linewidth=1.0,alpha=1.0,marker='')#,dashes=line)
+
+            plt.plot(time2,var2plot ,label='%s'%(explabel1[j][i]),color=color[j][i],linewidth=1.0,alpha=1.0,marker='')#,dashes=line)
+
+            i+=1
+
+        for ex3 in exp3: 
+
+            n0,n1   =   down.data_n(di,df,ex3.ltime.values.astype('datetime64[s]'))
+
+            var3     =   variables3[j]
+            var3plot =   ex3[var3][n0:n1,0,0].values
+            var3plot =   var3plot*var23[j]
+            time3    =   ex3.ltime[n0:n1]
+            hours    =   down.data_to_reference_vector(time3,day_0,month_0,year)
+            plt.plot(time3,var3plot ,label='%s'%(explabel1[j][i]),color=color[j][i],linewidth=1.0,alpha=1.0,marker='')#,dashes=line)
+
+            i+=1
+
+            #lim,var_to,color,explabel1,explabel2,leg_loc,show=df.default_temporal_mpas(ex,vall,var,hours,lim,var_to,color,explabel1,explabel2,leg_loc,diurnal,show)
+
+        #plt.axis([lim[j][0],lim[j][1],lim[j][2],lim[j][3]])
+
+        ax=label_plots(ax,leg_loc[j],'','')
+
+        label="%s"%(explabel2[j]+'_'+var)
+
+        fig.savefig('%s/temporal_%s.pdf'%(pars.out_fig,label),bbox_inches='tight',dpi=200, format='pdf')
+
+        if show[j]=='True':
+            plt.show()
+
+        plt.close()
+
+        j+=1
+
+    return 
+
 def temporal_ex_hours_mpas(exp,exp2,exp3,di,df,variables,variables2,variables3,explabel1=[],explabel2=[],lev=[],lim=[],var21=[],var22=[],var23=[],color=[],leg_loc=[],diurnal=[],show=[]): 
 
     #Date to referece
