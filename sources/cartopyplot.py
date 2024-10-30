@@ -70,14 +70,14 @@ def cartopy_plot(data,varname,date_str=[],lats=[],lons=[],lev=[],vmulti=[],bcolo
                 transform=ccrs.PlateCarree(),
                 cmap=color,alpha=1.0,extend=extend)
 
+
     #lines  = ax.contour(longitude, latitude, var[0,:,:], levels=filled.levels,
     #                    colors=['black'] ,alpha=0.8,linewidths=0.5,
     #                    transform=ccrs.PlateCarree())
 
 
     if cbar: 
-        #CB=fig.colorbar(filled, orientation='vertical',shrink=0.5)
-        CB=plt.colorbar(var, orientation='vertical',shrink=0.5)
+        CB=fig.colorbar(filled, orientation='vertical',shrink=0.5)
         CB.set_ticks(levels)
 
         if units:

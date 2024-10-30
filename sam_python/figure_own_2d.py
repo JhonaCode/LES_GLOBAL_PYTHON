@@ -18,16 +18,22 @@ from datetime import datetime, timedelta
 
 import  sam_python.data_own as down
 
-import  sam_python.plotparameters as pn 
-
 #Filter the function, more smothy
 from scipy.signal import lfilter
 
 import scipy.ndimage as ndimage
 
+import xarray as xr
 
-# To change the plot parameter 
-#from   sam_python  import  plotparameters_new as pn
+import  sam_python.plotparameters      as pp
+
+#to cp the parametres defaul 
+subprocess.run('cp Parameters_default.py /pesq/dados/bamc/jhonatan.aguirre/git_repositories/MAPS_python/sam_python/', shell = True, executable="/bin/bash")
+
+#used the user parameter to plot(plotparameter.py) if para:
+#pars=__import__('source.Parameters_default',globals())
+pars=importlib.import_module('.Parameters_default','sam_python',)
+
 
 #Color map
 #########

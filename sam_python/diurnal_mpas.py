@@ -47,7 +47,6 @@ def label_plots(ax,legend,explabel1,explabel2):
     ax.text(legend[0][0], legend[0][1], r' %s'%(explabel1), fontsize=8, color='black')
 
     ax.text(legend[1][0], legend[1][1], r' %s'%(explabel2), fontsize=8, color='black')
-
     if( legend[3][1]==True):
         plt.xlabel(r'%s'%(xlabel)) 
 
@@ -186,7 +185,6 @@ def diurnal_hours_mpas_ux(ex,dates,variables,explabel1=[],explabel2=[],alt=[],li
         lim,alt,var_to,color,explabel1,explabel2,leg_loc,diurnal,show=df.default_values_mpas(ex,vall,var,z,lim,alt,var_to,color,explabel1,explabel2,leg_loc,diurnal,show)
 
         var2plot=vall[var]*var_to[j]
-
 
         fig_label=name+'_'+var
 

@@ -71,17 +71,23 @@ def diurnal_hours_sam_xr(ex,variables,date,name=[],explabel1=[],explabel2=[],alt
     print("__%s__"%(ex.name))
     print("___________________")
 
-    date_format = '%Y%m%d%H'
+    #date_format = '%Y%m%d%H%M%S'
+    date_format = '%Y-%m-%dT%H'
     datei=dt.datetime.strptime(date[0], date_format)
     datef=dt.datetime.strptime(date[1], date_format)
+
+    time1 = np.datetime64(date[0]) 
+    time2 = np.datetime64(date[1])
+
+    ni,nf=down.data_n(time1,time2,ex.time.values) 
+    #ni,nf=down.data_n(datei,datef,ex.time.values) 
+
+    tovar= ex.sel(time=slice(ex.time[ni],ex.time[nf]))
 
     #if name:
     name    =   str(ex.name.values)#+'_'+dates[0]
 
     print("_les__%s__"%(name))
-
-    tovar= ex.sel(time=slice(datei,datef))
-
 
     j=0
     for var in variables:
@@ -324,7 +330,6 @@ def color_hours(hour):
     color='k'
 
     if hour==0:
-          #line=[3,2,1,2]
           line=[1,0]
           color='darkcyan'
 
@@ -334,7 +339,6 @@ def color_hours(hour):
           color='blue'
 
     elif  hour==2:
-          #line=[2, 1]
           line=[1,0]
           color='cyan'
 
@@ -345,10 +349,12 @@ def color_hours(hour):
 
     elif  hour==4:
 
+          line=[2, 1]
           color='r'
 
     elif  hour==5:
 
+          line=[3,2,1,2]
           color='tab:orange'
 
     elif  hour==6:
@@ -368,7 +374,6 @@ def color_hours(hour):
 
     elif  hour==9:
 
-          #line=[4,2,1,2]
           line=[1,0]
           color='y'
 

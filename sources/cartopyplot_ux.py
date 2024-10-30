@@ -44,8 +44,12 @@ def ajust_var_ux(data,varname,date_str=[],lev=[],vmulti=[]):
     var=getattr(data,varname)
 
     if lev: 
-        var= var.sel(t_iso_levels=var.t_iso_levels.isin([lev]))
-        #var= np.squeeze(var,1)
+
+        #@level= data.nIsoLevelsT.sel(nIsoLevelsT=[lev])
+        #@print(data.nIsoLevelsT[:])
+        #@var= var.sel(t_iso_levels=var.t_iso_levels.isin([lev]))
+        levi=list(data.nIsoLevelsT).index(lev)
+        var= var[:,:,levi]
     else: 
         var=var 
 
@@ -53,16 +57,23 @@ def ajust_var_ux(data,varname,date_str=[],lev=[],vmulti=[]):
 
         date_format = '%Y-%m-%dT%H:%M'##+':00.00000000'
         date_obj=dt.datetime.strptime(date_str, date_format)
+
         var= var.sel(Time=[date_obj],method='nearest')
+
 
     else:
 
         var= var.isel(Time=[0])
 
+
     if vmulti:
+
         var=var*vmulti
 
-    var =  var[0,:,0].to_polycollection(projection=pars.projection, override=True)
+    print(var.Time)
+
+    var =  var[0,:].to_polycollection(projection=pars.projection, override=True)
+
 
     return var
 
@@ -80,6 +91,7 @@ def axis_def_ux(ax,var,bcolor,lat,lon):
     levels= np.linspace(b1,b2,bn,endpoint=True)
 
     projection=ccrs.PlateCarree()
+
 
     if(lat):
         minlat= lat[0]
@@ -142,20 +154,19 @@ def cartopy_plot_ux(data,varname,date_str=[],lev=[],lats=[],lons=[],vmulti=[],bc
 
     var=ajust_var_ux(data,varname,date_str,lev,vmulti)
 
-
     pn.plotsize(pars.plotdef,pars.wf,pars.hf,pars.cmmais)
 
-    #fig = plt.figure()
-    #ax  = fig.add_subplot(1, 1, 1, projection=pars.projection)
+    fig = plt.figure()
+    ax  = fig.add_subplot(1, 1, 1, projection=pars.projection)
 
-    fig, ax = plt.subplots(
-        1,
-        1,
-        #figsize=(5, 5),
-        #facecolor="w",
-        constrained_layout=True,
-        subplot_kw=dict(projection=pars.projection),
-    )
+    #fig, ax = plt.subplots(
+    #    1,
+    #    1,
+    #    #figsize=(5, 5),
+    #    #facecolor="w",
+    #    constrained_layout=True,
+    #    subplot_kw=dict(projection=pars.projection),
+    #)
 
 
     ax=def_axis_1(ax)
@@ -163,18 +174,21 @@ def cartopy_plot_ux(data,varname,date_str=[],lev=[],lats=[],lons=[],vmulti=[],bc
     #Axis definitions
     ax,levels=axis_def_ux(ax,var,bcolor,lats,lons)
 
-    filled=ax.add_collection(var)
 
     var.set_antialiased(False)
     var.set_cmap(color)
+    var.set_edgecolors('face')         # No Edge Colors
+    var.set_clim(levels[0],levels[-1])
 
-    print(levels)
+    filled=ax.add_collection(var)
 
     if cbar: 
 
-        CB=fig.colorbar(var, orientation='vertical',shrink=0.5)
+        CB=fig.colorbar(var ,orientation='vertical',shrink=0.5)
 
-        #CB.set_ticks(levels)
+        CB.set_ticks(levels)
+        #filled.set_clim(0.0, 16.0)
+        #ax.autoscale(var)
 
         if units:
 

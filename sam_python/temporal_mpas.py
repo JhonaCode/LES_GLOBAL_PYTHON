@@ -59,7 +59,9 @@ def label_plots(ax,legend,explabel1,explabel2):
 
     return ax
 
-def temporal_ex_hours_mpas_ux(exp,exp2,exp3,di,df,variables,variables2,variables3,explabel1=[],explabel2=[],lev=[],lim=[],var21=[],var22=[],var23=[],color=[],leg_loc=[],diurnal=[],show=[]): 
+def temporal_ex_hours_mpas_ux(exp,di,df,variables,exp2,variables2=[],exp3=[],variables3=[],
+                              explabel1=[],explabel2=[],lev=[],lim=[],var21=[],var22=[],var23=[],
+                              color=[],leg_loc=[],diurnal=[],show=[]):
 
     #Date to referece
     year   =2024
@@ -67,12 +69,14 @@ def temporal_ex_hours_mpas_ux(exp,exp2,exp3,di,df,variables,variables2,variables
     day_0  =1
 
     #date_format = '%Y%m%d%H'
-    date_format = '%Y%m%d%H'
+    date_format = '%Y%m%d%H%M'
     di=dt.datetime.strptime(di, date_format)
     df=dt.datetime.strptime(df, date_format)
 
+
     j=0
     for var in variables:
+
 
         size_wg = leg_loc[j][5][0]
         size_hf = leg_loc[j][5][1]
@@ -98,6 +102,7 @@ def temporal_ex_hours_mpas_ux(exp,exp2,exp3,di,df,variables,variables2,variables
         for ex in exp: 
             name    =   str(ex.name.values)
             print("__%s__"%(name))
+
 
             tall=[]
             hours=[]
@@ -130,6 +135,8 @@ def temporal_ex_hours_mpas_ux(exp,exp2,exp3,di,df,variables,variables2,variables
                 #hours.append(date.values.astype('datetime64[s]'))
                 hours.append(d.values)
 
+                #print(hours)
+
 
                 vmean        =   tomean[var].mean(dim='n_face') 
 
@@ -149,41 +156,198 @@ def temporal_ex_hours_mpas_ux(exp,exp2,exp3,di,df,variables,variables2,variables
             i+=1
 
 
-        for ex2 in exp2: 
 
-            #n0,n1   =   down.data_n(di+dt.timedelta(hours=-0),df,ex2.ltime.values.astype('datetime64[s]'))
-            n0,n1   =   down.data_n(di,df,ex2.ltime.values.astype('datetime64[s]'))
+        if exp2:
 
-            var2    =   variables2[j]
+            i=0
+            for ex2 in exp2: 
 
-            try:
-                var2plot=ex2[var2][n0:n1,0].values
-            except:
-                var2plot=ex2[var2][n0:n1].values
+                #n0,n1   =   down.data_n(di+dt.timedelta(hours=-0),df,ex2.ltime.values.astype('datetime64[s]'))
+                n0,n1   =   down.data_n(di,df,ex2.ltime.values.astype('datetime64[s]'))
 
-            var2plot=   var2plot*var22[j]
+                var2    =   variables2[j]
 
-            time2   =   ex2.ltime[n0:n1].values
+                try:
+                    var2plot=ex2[var2][n0:n1,0].values
+                except:
+                    var2plot=ex2[var2][n0:n1].values
 
-            #hours   =   down.data_to_reference_vector(time2,day_0,month_0,year)
-            #plt.plot(hours,var2plot ,label='%s'%(explabel1[j][i]),color=color[j][i],linewidth=1.0,alpha=1.0,marker='')#,dashes=line)
+                var2plot=   var2plot*var22[j]
 
-            plt.plot(time2,var2plot ,label='%s'%(explabel1[j][i]),color=color[j][i],linewidth=1.0,alpha=1.0,marker='')#,dashes=line)
+                time2   =   ex2.ltime[n0:n1].values
+
+                #hours   =   down.data_to_reference_vector(time2,day_0,month_0,year)
+                #plt.plot(hours,var2plot ,label='%s'%(explabel1[j][i]),color=color[j][i],linewidth=1.0,alpha=1.0,marker='')#,dashes=line)
+
+                plt.plot(time2,var2plot ,label='%s'%(explabel1[j][i]),color=color[j][i],linewidth=1.0,alpha=1.0,marker='')#,dashes=line)
+
+                i+=1
+
+        if exp3:
+
+            i=0
+            for ex3 in exp3: 
+
+                n0,n1   =   down.data_n(di,df,ex3.ltime.values.astype('datetime64[s]'))
+
+                var3     =   variables3[j]
+                var3plot =   ex3[var3][n0:n1,0,0].values
+                var3plot =   var3plot*var23[j]
+                time3    =   ex3.ltime[n0:n1]
+                hours    =   down.data_to_reference_vector(time3,day_0,month_0,year)
+                plt.plot(time3,var3plot ,label='%s'%(explabel1[j][i]),color=color[j][i],linewidth=1.0,alpha=1.0,marker='')#,dashes=line)
+
+                i+=1
+
+
+        ax=label_plots(ax,leg_loc[j],'','')
+
+        label="%s"%(explabel2[j]+'_'+var)
+
+        fig.savefig('%s/temporal_%s.pdf'%(pars.out_fig,label),bbox_inches='tight',dpi=200, format='pdf')
+
+        if show[j]=='True':
+            plt.show()
+
+        plt.close()
+
+        j+=1
+
+    return 
+
+def temporal_ex_hours_mpas_parallel(exp,di,df,variables,exp2=[],variables2=[],exp3=[],variables3=[],explabel1=[],explabel2=[],lev=[],lim=[],var21=[],var22=[],var23=[],color=[],leg_loc=[],diurnal=[],show=[]): 
+
+    #Date to referece
+    year   =2024
+    month_0=1
+    day_0  =1
+
+    #date_format = '%Y%m%d%H'
+    date_format = '%Y%m%d%H%M'
+    di=dt.datetime.strptime(di, date_format)
+    df=dt.datetime.strptime(df, date_format)
+
+    #print(exp[0][0].Time)
+    #print(exp[0][1].Time)
+
+
+    j=0
+    for var in variables:
+
+
+        size_wg = leg_loc[j][5][0]
+        size_hf = leg_loc[j][5][1]
+
+        pp.plotsize(size_wg,size_hf, 0.0,'temporal')
+
+        #To plot 
+        fig     = plt.figure()
+        ax      = plt.axes()
+
+        print("___________________")
+        print("______%s_____"%(var))
+        print("___________________")
+
+
+        if lim:
+
+            lim[j][0]=dt.datetime.strptime(lim[j][0], date_format)
+            lim[j][1]=dt.datetime.strptime(lim[j][1], date_format)
+
+
+        i=0
+        for ex in exp: 
+
+            name    =   str(ex[0].name.values)
+            print("__%s__"%(name))
+
+
+            tall=[]
+            hours=[]
+            k=0
+            #To reference data change if change the day
+            d0=-1
+            day1_0=day_0
+
+
+            #for i in range(0,len(ex)):
+            xx=[]
+            yy=[]
+
+            for e in ex:
+
+                tomean = e[var]
+
+                #if lev: 
+                #    tomean= tomean.sel(t_iso_levels=tomean.t_iso_levels.isin([lev]))
+                #day=d.dt.day.values
+
+                hours.append(tomean.Time.values)
+                vmean        =   tomean.mean(dim='n_face') 
+                vall=vmean
+
+                #if(k==0):
+                #    vall=vmean
+                #else:
+                #    vall=xr.merge([vmean,vall])
+
+                var1plot=vall*var21[j]
+
+                if k==0:
+                    plt.plot(tomean.Time.values,var1plot.values ,label='%s'%(explabel1[j][i]),color=color[j][i],linewidth=1.0,alpha=1.0)#,dashes=line)
+                else:
+                    plt.plot(tomean.Time.values,var1plot.values, color=color[j][i],linewidth=1.0,alpha=1.0)#,dashes=line)
+
+                k+=1
+
+                #xx.append(tomean.Time.values)
+                #yy.append(var1plot.values)
+
+            #plt.plot(xx,yy ,label='%s'%(explabel1[j][i]),color=color[j][i],linewidth=1.0,alpha=1.0)#,dashes=line)
 
             i+=1
 
-        for ex3 in exp3: 
+        if exp2:
+    
+            #i=0
+            for ex2 in exp2: 
 
-            n0,n1   =   down.data_n(di,df,ex3.ltime.values.astype('datetime64[s]'))
+                #n0,n1   =   down.data_n(di+dt.timedelta(hours=-0),df,ex2.ltime.values.astype('datetime64[s]'))
+                n0,n1   =   down.data_n(di,df,ex2.ltime.values.astype('datetime64[s]'))
 
-            var3     =   variables3[j]
-            var3plot =   ex3[var3][n0:n1,0,0].values
-            var3plot =   var3plot*var23[j]
-            time3    =   ex3.ltime[n0:n1]
-            hours    =   down.data_to_reference_vector(time3,day_0,month_0,year)
-            plt.plot(time3,var3plot ,label='%s'%(explabel1[j][i]),color=color[j][i],linewidth=1.0,alpha=1.0,marker='')#,dashes=line)
+                var2    =   variables2[j]
 
-            i+=1
+                try:
+                    var2plot=ex2[var2][n0:n1,0].values
+                except:
+                    var2plot=ex2[var2][n0:n1].values
+
+                var2plot=   var2plot*var22[j]
+
+                time2   =   ex2.ltime[n0:n1].values
+
+                #hours   =   down.data_to_reference_vector(time2,day_0,month_0,year)
+                #plt.plot(hours,var2plot ,label='%s'%(explabel1[j][i]),color=color[j][i],linewidth=1.0,alpha=1.0,marker='')#,dashes=line)
+
+                plt.plot(time2,var2plot ,label='%s'%(explabel1[j][i]),color=color[j][i],linewidth=1.0,alpha=1.0,marker='')#,dashes=line)
+
+                i+=1
+
+        if exp3:
+
+            #i=0
+            for ex3 in exp3: 
+
+                n0,n1   =   down.data_n(di,df,ex3.ltime.values.astype('datetime64[s]'))
+
+                var3     =   variables3[j]
+                var3plot =   ex3[var3][n0:n1,0,0].values
+                var3plot =   var3plot*var23[j]
+                time3    =   ex3.ltime[n0:n1]
+                hours    =   down.data_to_reference_vector(time3,day_0,month_0,year)
+                plt.plot(time3,var3plot ,label='%s'%(explabel1[j][i]),color=color[j][i],linewidth=1.0,alpha=1.0,marker='')#,dashes=line)
+
+                i+=1
 
             #lim,var_to,color,explabel1,explabel2,leg_loc,show=df.default_temporal_mpas(ex,vall,var,hours,lim,var_to,color,explabel1,explabel2,leg_loc,diurnal,show)
 
@@ -203,6 +367,188 @@ def temporal_ex_hours_mpas_ux(exp,exp2,exp3,di,df,variables,variables2,variables
         j+=1
 
     return 
+
+def diurnal_cycle_mpas_parallel(exp,di,df,variables,exp2=[],variables2=[],exp3=[],variables3=[],explabel1=[],explabel2=[],lev=[],lim=[],var21=[],var22=[],var23=[],color=[],leg_loc=[],diurnal=[],show=[]): 
+
+    #Date to referece
+    year   =2024
+    month_0=1
+    day_0  =1
+
+    #date_format = '%Y%m%d%H'
+    date_format = '%Y%m%d%H%M'
+    di=dt.datetime.strptime(di, date_format)
+    df=dt.datetime.strptime(df, date_format)
+
+    j=0
+    for var in variables:
+
+
+        size_wg = leg_loc[j][5][0]
+        size_hf = leg_loc[j][5][1]
+
+        pp.plotsize(size_wg,size_hf, 0.0,'temporal')
+
+        #To plot 
+        fig     = plt.figure()
+        ax      = plt.axes()
+
+        print("___________________")
+        print("______%s_____"%(var))
+        print("___________________")
+
+
+        if lim:
+
+            lim[j][0]=dt.datetime.strptime(lim[j][0], date_format)
+            lim[j][1]=dt.datetime.strptime(lim[j][1], date_format)
+
+
+        i=0
+        for ex in exp: 
+
+            name    =   str(ex[0].name.values)
+            print("__%s__"%(name))
+
+            tall=[]
+            hours=[]
+            k=0
+            #To reference data change if change the day
+            d0=-1
+            day1_0=day_0
+
+            xx=[]
+            yy=[]
+
+            for e in ex:
+
+                tomean = e[var]
+
+                hours.append(tomean.Time.values)
+
+                vmean        =   tomean.mean(dim='n_face') 
+
+                var1plot=vmean*var21[j]
+
+                mean,hours   =   diurnal_main(var1plot) 
+
+                plt.plot(hours,mean,label='%s'%(explabel1[j][i]),color=color[j][i],linewidth=1.0,alpha=1.0)#,dashes=line)
+
+                plt.show()
+
+                exit()
+
+                if k==0:
+                    plt.plot(tomean.Time.values,var1plot.values ,label='%s'%(explabel1[j][i]),color=color[j][i],linewidth=1.0,alpha=1.0)#,dashes=line)
+                else:
+                    plt.plot(tomean.Time.values,var1plot.values, color=color[j][i],linewidth=1.0,alpha=1.0)#,dashes=line)
+
+                k+=1
+            i+=1
+
+        if exp2:
+    
+            #i=0
+            for ex2 in exp2: 
+
+                n0,n1   =   down.data_n(di,df,ex2.ltime.values.astype('datetime64[s]'))
+
+                var2    =   variables2[j]
+
+                try:
+                    var2plot=ex2[var2][n0:n1,0].values
+                except:
+                    var2plot=ex2[var2][n0:n1].values
+
+                var2plot=   var2plot*var22[j]
+
+                time2   =   ex2.ltime[n0:n1].values
+
+                plt.plot(time2,var2plot ,label='%s'%(explabel1[j][i]),color=color[j][i],linewidth=1.0,alpha=1.0,marker='')#,dashes=line)
+
+                i+=1
+
+        if exp3:
+
+            #i=0
+            for ex3 in exp3: 
+
+                n0,n1   =   down.data_n(di,df,ex3.ltime.values.astype('datetime64[s]'))
+
+                var3     =   variables3[j]
+                var3plot =   ex3[var3][n0:n1,0,0].values
+                var3plot =   var3plot*var23[j]
+                time3    =   ex3.ltime[n0:n1]
+                hours    =   down.data_to_reference_vector(time3,day_0,month_0,year)
+                plt.plot(time3,var3plot ,label='%s'%(explabel1[j][i]),color=color[j][i],linewidth=1.0,alpha=1.0,marker='')#,dashes=line)
+
+                i+=1
+
+        ax=label_plots(ax,leg_loc[j],'','')
+
+        label="%s"%(explabel2[j]+'_'+var)
+
+        fig.savefig('%s/diurnal_cicle_%s.pdf'%(pars.out_fig,label),bbox_inches='tight',dpi=200, format='pdf')
+
+        if show[j]=='True':
+            plt.show()
+
+        plt.close()
+
+        j+=1
+
+    return 
+
+
+def diurnal_main(var): 
+
+    #Lengh of the time array to search
+    ndtp    = len(var.Time) 
+
+    #number of levels
+    nl      =1
+    #number of hours
+    nh      = 24
+
+    
+    hi=0
+    ch=1
+
+    #Hour array
+    #+ch to reach the final hour in the loop
+    hour    = np.zeros(nh)
+
+    #Sum variable to the mean 
+    varsum  = np.zeros([nh])
+
+    meanvar = np.zeros([nh])
+
+    #var     = np.zeros([nl])
+    meanvar = np.zeros([nh])
+
+    #Number of  time thar variable was sum 
+    cont    = np.zeros(nh)
+    
+    for i in range(0,ndtp):
+    
+        for j in range(0,nh,ch):
+
+            if int(var[i].Time.dt.hour)==j+hi: 
+
+                hour[j]     =   j+hi
+
+                varsum[j] =   varsum[j]+var[i]
+
+                cont[j]     =   cont[j]+1
+
+
+    for j in range(0,nh-ch,ch):
+        
+        meanvar[j] = varsum[j]/cont[j]
+
+
+    return meanvar,hour
+
 
 def temporal_ex_hours_mpas(exp,exp2,exp3,di,df,variables,variables2,variables3,explabel1=[],explabel2=[],lev=[],lim=[],var21=[],var22=[],var23=[],color=[],leg_loc=[],diurnal=[],show=[]): 
 
@@ -322,6 +668,7 @@ def temporal_ex_hours_mpas(exp,exp2,exp3,di,df,variables,variables2,variables3,e
         for ex3 in exp3: 
 
             n0,n1   =   down.data_n(di,df,ex3.ltime.values.astype('datetime64[s]'))
+
 
             var3     =   variables3[j]
             var3plot =   ex3[var3][n0:n1,0,0].values
