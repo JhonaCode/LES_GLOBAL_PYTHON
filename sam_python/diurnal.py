@@ -51,7 +51,11 @@ def label_plots(ax,legend,explabel1,explabel2):
 
     ax.text(legend[0][0], legend[0][1], r' %s'%(explabel1), fontsize=8, color='black')
 
-    ax.text(legend[1][0], legend[1][1], r' %s'%(explabel2), fontsize=8, color='black')
+    if  legend[1]:
+
+        ax.text(legend[1][0], legend[1][1], r' %s'%(explabel2), fontsize=8, color='black')
+
+    plt.grid(color = 'gray', linestyle = '--', linewidth = 0.25)
 
     if( legend[3][1]==True):
         plt.xlabel(r'%s'%(xlabel)) 
@@ -65,11 +69,81 @@ def label_plots(ax,legend,explabel1,explabel2):
 
     return ax
 
+def diurnal_hours_exps_sam_xr(exp,variables,date,name=[],explabel1=[],explabel2=[],alt=[],lim=[],var_to=[],color=[],leg_loc=[],diurnal=[],show=[]): 
+
+    k=0
+    for ex in exp:
+
+        print("___________________")
+        print("__%s__"%(ex.name))
+        print("___________________")
+
+        #date_format = '%Y%m%d%H%M%S'
+        date_format = '%Y-%m-%dT%H'
+        datei=dt.datetime.strptime(date[k][0], date_format)
+        datef=dt.datetime.strptime(date[k][1], date_format)
+
+        time1 = np.datetime64(date[k][0]) 
+        time2 = np.datetime64(date[k][1])
+
+        ni,nf=down.data_n(time1,time2,ex.time.values) 
+        #ni,nf=down.data_n(datei,datef,ex.time.values) 
+
+        tovar= ex.sel(time=slice(ex.time[ni],ex.time[nf]))
+
+        #if name:
+        name    =   str(ex.name.values)#+'_'+dates[0]
+
+        print("_les__%s__"%(name))
+
+        j=0
+        for var in variables:
+
+        
+            print("___________________")
+            print("%s"%(var))
+            print("___________________")
+
+            #Its no necessary to calculate de height
+            z=ex.z.values
+
+            limu,altu,var_tou,coloru,explabel1u,explabel2u,leg_locu,diurnalu,showu=df.default_values_sam_diurnal(ex,var,z,lim,alt,var_to,color,explabel1,explabel2,leg_loc,diurnal,show,k,j)
+
+            data=tovar[var][:,:]*var_tou
+
+            hours=[datei,datef]
+
+            name2='les_'+name+'_'+var
+            
+            #lines per hour
+            ch=diurnalu[0]
+
+            try:
+                #hour to plot
+                htp=diurnalu[2]
+            except:
+                htp=[]
+
+            figs,axis = main_plot_diurnal_new(data,ch,htp,hours,z,altu,limu,coloru,name2,[explabel1u,explabel2u],leg_locu,diurnalu[1])
+
+            j+=1
+
+        k+=1
+
+    if show:
+
+        plt.show()
+
+    plt.close('all')
+
+    return 
+
 def diurnal_hours_sam_xr(ex,variables,date,name=[],explabel1=[],explabel2=[],alt=[],lim=[],var_to=[],color=[],leg_loc=[],diurnal=[],show=[]): 
 
     print("___________________")
     print("__%s__"%(ex.name))
     print("___________________")
+
 
     #date_format = '%Y%m%d%H%M%S'
     date_format = '%Y-%m-%dT%H'
@@ -100,7 +174,7 @@ def diurnal_hours_sam_xr(ex,variables,date,name=[],explabel1=[],explabel2=[],alt
         #Its no necessary to calculate de height
         z=ex.z.values
 
-        lim,alt,var_to,color,explabel1,explabel2,leg_loc,diurnal,show=df.default_values_sam_diurnal(ex,var,z,lim,alt,var_to,color,explabel1,explabel2,leg_loc,diurnal,show)
+        limu,altu,var_tou,coloru,explabel1u,explabel2u,leg_locu,diurnalu,showu=df.default_values_sam_diurnal(ex,var,z,lim,alt,var_to,color,explabel1,explabel2,leg_loc,diurnal,show)
 
         data=tovar[var][:,:]*var_to[j]
 
@@ -110,7 +184,7 @@ def diurnal_hours_sam_xr(ex,variables,date,name=[],explabel1=[],explabel2=[],alt
 
         #lines per hour
         ch=3
-        figs,axis = main_plot_diurnal_new(data,ch,hours,z,alt[j],lim[j],color[j],name2,[explabel1[j],explabel2[j]],leg_loc[j],diurnal[j])
+        figs,axis = main_plot_diurnal_new(data,ch,hours,z,altu,limu,coloru,name2,[explabel1u,explabel2u],leg_locu,diurnalu[1])
 
         if show[j]:
 
@@ -124,7 +198,7 @@ def diurnal_hours_sam_xr(ex,variables,date,name=[],explabel1=[],explabel2=[],alt
     return 
 
 
-def main_plot_diurnal_new(data,ch,date,z,alt,lim,color,name,explabel,leg_loc,diurnal):
+def main_plot_diurnal_new(data,ch,hours,date,z,alt,lim,color,name,explabel,leg_loc,diurnal):
 
     hi=date[0].hour
     hf=date[1].hour
@@ -134,13 +208,7 @@ def main_plot_diurnal_new(data,ch,date,z,alt,lim,color,name,explabel,leg_loc,diu
     ch      = ch
 
     #mean diurnal function 
-    meanvar,hour = diurnal_main(data,z,hi,hf,ch)
-
-    #size_wg = 0.28
-    #size_wg = 0.33
-    #size_hf = 1.50
-
-    #plotsize(size_wg,size_hf, 0.0,'diurnal')
+    meanvar,hour = diurnal_main(data,z,hi,hf,ch=1)
 
     size_wg = leg_loc[5][0]
     size_hf = leg_loc[5][1]
@@ -153,21 +221,29 @@ def main_plot_diurnal_new(data,ch,date,z,alt,lim,color,name,explabel,leg_loc,diu
 
     jj=0
 
+
     if diurnal:
-        
-        j=0
-        for h in range(0,hf-hi,ch):
-        #for h in range(0,len(hour)): 
-    
-            line,col =color_hours(j)
+         
+        if hours:
 
-            #print(col,j)
-            plt.plot(meanvar[h,:] ,z[:]/1000.0,label='%d'%(hour[h]),color=col,linewidth=1.0,alpha=1.0,dashes=line)
-            #plt.plot(meanvar[j,:] ,z[:]/1000.0,label='%d'%(h),color=col,linewidth=1.0,alpha=1.0,dashes=line)
-    
-            j+=1
+            for j in range(0,len(hour)):                                
+                
+                for jj in range(0,len(hours)):                          
+                    
+                    if hour[j]==hours[jj]:
+            
+                        line,col =color_hours(hour[j])
+                        plt.plot(meanvar[j,:] ,z[:]/1000.0,label='%d'%(hour[j]),color=col,linewidth=1.0,alpha=1.0,dashes=line)
 
-
+        else:
+                
+            j=0
+            for h in range(0,hf-hi,ch):
+            
+                line,col =color_hours(hour[h])
+                plt.plot(meanvar[h,:] ,z[:]/1000.0,label='%d'%(hour[h]),color=col,linewidth=1.0,alpha=1.0,dashes=line)
+                j+=1
+            
     #if( name=='buoyancyflux'):
 
     #    ax.ticklabel_format(axis="x", style="sci", scilimits=(0,0))
@@ -190,9 +266,6 @@ def main_plot_diurnal_new(data,ch,date,z,alt,lim,color,name,explabel,leg_loc,diu
     label="%s"%(name)
 
     plt.savefig('%s/diurnal_%s.pdf'%(pars.out_fig,label),bbox_inches='tight',dpi=200, format='pdf')
-
-
-    plt.show()
 
     return fig,ax
 
@@ -329,58 +402,61 @@ def color_hours(hour):
     line=[1,0]
     color='k'
 
-    if hour==0:
-          line=[1,0]
-          color='darkcyan'
-
-    elif  hour==1:
-
-          line=[2,2,1,2]
-          color='blue'
-
-    elif  hour==2:
-          line=[1,0]
-          color='cyan'
-
-    elif  hour==3:
-
-          line=[3, 1]
-          color='green'
-
-    elif  hour==4:
-
-          line=[2, 1]
-          color='r'
-
-    elif  hour==5:
-
+    if hour==7:
           line=[3,2,1,2]
-          color='tab:orange'
-
-    elif  hour==6:
-
-          line=[1,2,1,2]
-          color='tab:brown'
-
-    elif  hour==7:
-
-          line=[2,1,1,3]
-          color='m'
+          color='darkcyan'
 
     elif  hour==8:
 
-          line=[2,1,5,3]
-          color='tab:purple'
+          line=[2,2,1,2]
+          color='green'
 
     elif  hour==9:
 
           line=[1,0]
-          color='y'
+          color='blue'
 
     elif  hour==10:
 
-          line=[1,2,4,2]
-          color='peru'
+          #line=[3, 1]
+          line=[1,0]
+          color='cyan'
+
+    elif  hour==11:
+
+          line=[2, 1]
+          #line=[1,2,1,2]
+          color='tab:purple'
+
+    elif  hour==12:
+
+          color='tab:brown'
+
+    elif  hour==13:
+
+          line=[1,0]
+          color='r'
+
+    elif  hour==14:
+
+          line=[1,0]
+          color='tab:orange'
+
+    elif  hour==15:
+
+          line=[2,1,1,1]
+          color='limegreen'
+
+    elif  hour==16:
+
+          line=[1,0]
+          color='m'
+
+    elif  hour==17:
+
+          #line=[1,2,4,2]
+          line=[1,0]
+          color='darkblue'
     
     return line,color
 
@@ -405,6 +481,7 @@ def color_hours_2(hour):
 
     elif  hour==12:
 
+          #line=[3, 1]
           line=[3, 1]
           color='green'
 

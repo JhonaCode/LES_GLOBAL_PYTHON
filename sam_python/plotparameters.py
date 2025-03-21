@@ -1,8 +1,9 @@
+##https://matplotlib.org/stable/users/explain/customizing.html
+
 import matplotlib as mpl
 
 # \showthe\columnwidth overleaf!
 #columnwidth = 397.495# value given by Latex
-
 
 def plotsize(wf,hf,cmmais,para_name): 
 
@@ -10,9 +11,12 @@ def plotsize(wf,hf,cmmais,para_name):
 
     figsize     = get_figsize(columnwidth, wf=wf, hf=hf, cmmais=cmmais)
 
-    params =parameters(para_name,figsize)
+    params,tama =parameters(para_name,figsize)
+
 
     mpl.rcParams.update(params)
+
+    return tama 
 
 
 def get_figsize(columnwidth, wf=0.5, hf=(5.**0.5-1.0)/2.0, cmmais=0.0):
@@ -59,6 +63,8 @@ def get_figsize(columnwidth, wf=0.5, hf=(5.**0.5-1.0)/2.0, cmmais=0.0):
 def parameters(name,figsize):
 
     if name=='diurnal':
+
+        tama=9
     
         parame = {
               'figure.figsize'  : figsize,
@@ -76,6 +82,8 @@ def parameters(name,figsize):
         }
 
     if name=='diurnal2':
+
+        tama=9
     
         parame = {
               'figure.figsize'  : figsize,
@@ -94,23 +102,36 @@ def parameters(name,figsize):
 
     if name=='2d':
 
+        tama=8
+
         parame = {
               'figure.figsize'   : figsize,
               'font.family'      : 'serif',
               'font.sans-serif'  : 'Helvetica',
-              'font.size'        : 6,
-              'font.weight'      : '500',
+              'font.weight'      :  11,
+              #labelof cbbar
+              'font.size'        :  tama,
               'lines.linewidth'  :  2,
-              'legend.fontsize'  : 'medium',
-              'axes.labelsize'   : 'medium',
-              'axes.labelweight' : '500',
-              'xtick.labelsize'  : 'medium',
-              'ytick.labelsize'  : 'medium',
+              'legend.fontsize'  :  tama,
+              'axes.labelsize'   :  11,
+              'axes.labelweight' :  11,
+              #size of the numbers
+              'xtick.labelsize'  :  tama,
+              'ytick.labelsize'  :  tama,
+              'xtick.major.width':   0.5, # major tick width in points
+              'xtick.minor.width':   0.05, # major tick width in points
+              'ytick.major.width':   0.1, # major tick width in points
+              'ytick.minor.width':   0.1, # major tick width in points
+              #square of the fig
+              'axes.linewidth':     0.5, 
               'xtick.direction'  : 'out', 
+#              'text.usetex': 'True',
+
                     }
     
     if name=='temporal':
 
+        tama=9
         parame= {
              	  'figure.figsize':figsize,
             	  'font.family' : 'serif',
@@ -126,4 +147,5 @@ def parameters(name,figsize):
                   'xtick.direction': 'out',   
         }
 
-    return parame
+
+    return parame,tama

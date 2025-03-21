@@ -97,6 +97,7 @@ def data_ind(idi,data):
 
 def data_n(idi,idf,data): 
 
+
     #idi = dt.datetime(2014, 9, 26, 1) 
     #idf = dt.datetime(2014, 10,01, 1) 
     

@@ -67,6 +67,7 @@ def two_dimensional_sam_xr(ex,variables,date,name=[],explabel1=[],explabel2=[],a
     time1 = np.datetime64(date[0]) 
     time2 = np.datetime64(date[1])
 
+
     ni,nf=down.data_n(time1,time2,ex.time.values) 
 
     tovar= ex.sel(time=slice(ex.time[ni],ex.time[nf]))
@@ -89,7 +90,7 @@ def two_dimensional_sam_xr(ex,variables,date,name=[],explabel1=[],explabel2=[],a
 
         hours=[datei,datef]
 
-        contour,alt,var_to,color,explabel1,explabel2,leg_loc,show=df.default_values_sam_2d(ex,var,z,contour,alt,var_to,color,explabel1,explabel2,leg_loc,show)
+        contour,alt,var_to,color,explabel1,explabel2,leg_loc,show=df.default_values_sam_2d_kj(ex,var,z,contour,alt,var_to,color,explabel1,explabel2,leg_loc,show,0,j)
 
         data=tovar[var][:,:]*var_to[j]
 
@@ -106,6 +107,71 @@ def two_dimensional_sam_xr(ex,variables,date,name=[],explabel1=[],explabel2=[],a
 
 
         plt.close('all')
+
+    return 
+
+
+def two_dimensional_exps_sam_xr(exp,variables,date,name=[],explabel1=[],explabel2=[],alt=[],contour=[],var_to=[],color=[],leg_loc=[],show=[]):
+
+    k=0
+    for ex in exp:
+
+        print("___________________")
+        print("__%s__"%(ex.name))
+        print("___________________")
+
+        #date_format = '%Y%m%d%H%M%S'
+        date_format = '%Y-%m-%dT%H'
+        datei=dt.datetime.strptime(date[k][0], date_format)
+        datef=dt.datetime.strptime(date[k][1], date_format)
+
+        time1 = np.datetime64(date[k][0]) 
+        time2 = np.datetime64(date[k][1])
+
+        ni,nf=down.data_n(time1,time2,ex.time.values) 
+
+        tovar= ex.sel(time=slice(ex.time[ni],ex.time[nf]))
+
+        #if name:
+        name    =   str(ex.name.values)#+'_'+dates[0]
+
+        print("_les__%s__"%(name))
+
+        j=0
+        for var in variables:
+
+        
+            print("___________________")
+            print("%s"%(var))
+            print("___________________")
+
+            #Its no necessary to calculate de height
+            z=ex.z.values
+
+            hours=[datei,datef]
+
+            contour,alt,var_to,color,exl1,exl2,leg_loc,show=df.default_values_sam_2d_kj(ex,var,z,contour,alt,var_to,color,explabel1,explabel2,leg_loc,show,k,j)
+
+
+            data=tovar[var][:,:]*var_to[j]
+
+
+            fig_label='les_'+name+'_'+var
+
+
+            figs,axis  = fown.d2_plot_im_diff(data,z,alt[j],contour[j],color[j],[fig_label,exl1,exl2],leg_loc[j],hours=hours)
+
+
+            j+=1
+
+
+        k+=1
+
+    if show:
+
+        plt.show()
+    
+    plt.close('all')
 
     return 
 

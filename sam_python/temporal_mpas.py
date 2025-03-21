@@ -218,18 +218,14 @@ def temporal_ex_hours_mpas_ux(exp,di,df,variables,exp2,variables2=[],exp3=[],var
 def temporal_ex_hours_mpas_parallel(exp,di,df,variables,exp2=[],variables2=[],exp3=[],variables3=[],explabel1=[],explabel2=[],lev=[],lim=[],var21=[],var22=[],var23=[],color=[],leg_loc=[],diurnal=[],show=[]): 
 
     #Date to referece
-    year   =2024
-    month_0=1
-    day_0  =1
+    year   = 2024
+    month_0= 1
+    day_0  = 1
 
-    #date_format = '%Y%m%d%H'
     date_format = '%Y%m%d%H%M'
+
     di=dt.datetime.strptime(di, date_format)
     df=dt.datetime.strptime(df, date_format)
-
-    #print(exp[0][0].Time)
-    #print(exp[0][1].Time)
-
 
     j=0
     for var in variables:
@@ -248,7 +244,6 @@ def temporal_ex_hours_mpas_parallel(exp,di,df,variables,exp2=[],variables2=[],ex
         print("______%s_____"%(var))
         print("___________________")
 
-
         if lim:
 
             lim[j][0]=dt.datetime.strptime(lim[j][0], date_format)
@@ -259,21 +254,20 @@ def temporal_ex_hours_mpas_parallel(exp,di,df,variables,exp2=[],variables2=[],ex
         for ex in exp: 
 
             name    =   str(ex[0].name.values)
+
             print("__%s__"%(name))
 
-
-            tall=[]
-            hours=[]
-            k=0
+            tall  =[]
+            hours =[]
             #To reference data change if change the day
             d0=-1
             day1_0=day_0
-
 
             #for i in range(0,len(ex)):
             xx=[]
             yy=[]
 
+            k     =0
             for e in ex:
 
                 tomean = e[var]
@@ -283,20 +277,21 @@ def temporal_ex_hours_mpas_parallel(exp,di,df,variables,exp2=[],variables2=[],ex
                 #day=d.dt.day.values
 
                 hours.append(tomean.Time.values)
+
                 vmean        =   tomean.mean(dim='n_face') 
-                vall=vmean
 
                 #if(k==0):
                 #    vall=vmean
                 #else:
                 #    vall=xr.merge([vmean,vall])
 
-                var1plot=vall*var21[j]
+                var1plot=vmean*var21[j]
 
                 if k==0:
-                    plt.plot(tomean.Time.values,var1plot.values ,label='%s'%(explabel1[j][i]),color=color[j][i],linewidth=1.0,alpha=1.0)#,dashes=line)
+                    plt.plot(tomean.Time.values,var1plot.values ,label='%s'%(explabel1[j][i]),color=color[j][i],linewidth=1.0,alpha=1.0)
+
                 else:
-                    plt.plot(tomean.Time.values,var1plot.values, color=color[j][i],linewidth=1.0,alpha=1.0)#,dashes=line)
+                    plt.plot(tomean.Time.values,var1plot.values, color=color[j][i],linewidth=1.0,alpha=1.0)
 
                 k+=1
 
@@ -412,7 +407,6 @@ def diurnal_cycle_mpas_parallel(exp,di,df,variables,exp2=[],variables2=[],exp3=[
 
             tall=[]
             hours=[]
-            k=0
             #To reference data change if change the day
             d0=-1
             day1_0=day_0
@@ -420,6 +414,10 @@ def diurnal_cycle_mpas_parallel(exp,di,df,variables,exp2=[],variables2=[],exp3=[
             xx=[]
             yy=[]
 
+
+            var_all=[]
+
+            k=0
             for e in ex:
 
                 tomean = e[var]
@@ -430,25 +428,22 @@ def diurnal_cycle_mpas_parallel(exp,di,df,variables,exp2=[],variables2=[],exp3=[
 
                 var1plot=vmean*var21[j]
 
-                mean,hours   =   diurnal_main(var1plot) 
-
-                plt.plot(hours,mean,label='%s'%(explabel1[j][i]),color=color[j][i],linewidth=1.0,alpha=1.0)#,dashes=line)
-
-                plt.show()
-
-                exit()
-
-                if k==0:
-                    plt.plot(tomean.Time.values,var1plot.values ,label='%s'%(explabel1[j][i]),color=color[j][i],linewidth=1.0,alpha=1.0)#,dashes=line)
-                else:
-                    plt.plot(tomean.Time.values,var1plot.values, color=color[j][i],linewidth=1.0,alpha=1.0)#,dashes=line)
+                var_all.append(vmean)
 
                 k+=1
+
+            mean,hours   =   diurnal_main(var_all)
+
+
+            plt.plot(hours,mean,label='%s'%(explabel1[j][i]),color=color[j][i],linewidth=1.0,alpha=1.0)#,dashes=line)
+
+
             i+=1
 
         if exp2:
     
             #i=0
+            var_all=[]
             for ex2 in exp2: 
 
                 n0,n1   =   down.data_n(di,df,ex2.ltime.values.astype('datetime64[s]'))
@@ -460,27 +455,34 @@ def diurnal_cycle_mpas_parallel(exp,di,df,variables,exp2=[],variables2=[],exp3=[
                 except:
                     var2plot=ex2[var2][n0:n1].values
 
+
                 var2plot=   var2plot*var22[j]
 
-                time2   =   ex2.ltime[n0:n1].values
+                val_all.append(var2plot)
+                
+                mean,hours   =   diurnal_main(var_all)
 
-                plt.plot(time2,var2plot ,label='%s'%(explabel1[j][i]),color=color[j][i],linewidth=1.0,alpha=1.0,marker='')#,dashes=line)
+                plt.plot(hours,mean,label='%s'%(explabel1[j][i]),color=color[j][i],linewidth=1.0,alpha=1.0,marker='')#,dashes=line)
 
                 i+=1
 
         if exp3:
 
             #i=0
+            var_all=[]
             for ex3 in exp3: 
 
                 n0,n1   =   down.data_n(di,df,ex3.ltime.values.astype('datetime64[s]'))
 
                 var3     =   variables3[j]
-                var3plot =   ex3[var3][n0:n1,0,0].values
+                var3plot =   ex3[var3][n0:n1,0,0]#.values
                 var3plot =   var3plot*var23[j]
-                time3    =   ex3.ltime[n0:n1]
-                hours    =   down.data_to_reference_vector(time3,day_0,month_0,year)
-                plt.plot(time3,var3plot ,label='%s'%(explabel1[j][i]),color=color[j][i],linewidth=1.0,alpha=1.0,marker='')#,dashes=line)
+
+                var_all.append(var3plot)
+
+                mean,hours   =   diurnal_main(var_all)
+
+                plt.plot(hours,mean,label='%s'%(explabel1[j][i]),color=color[j][i],linewidth=1.0,alpha=1.0,marker='')#,dashes=line)
 
                 i+=1
 
@@ -502,14 +504,11 @@ def diurnal_cycle_mpas_parallel(exp,di,df,variables,exp2=[],variables2=[],exp3=[
 
 def diurnal_main(var): 
 
-    #Lengh of the time array to search
-    ndtp    = len(var.Time) 
 
     #number of levels
     nl      =1
     #number of hours
-    nh      = 24
-
+    nh      =24
     
     hi=0
     ch=1
@@ -520,26 +519,39 @@ def diurnal_main(var):
 
     #Sum variable to the mean 
     varsum  = np.zeros([nh])
-
+    
     meanvar = np.zeros([nh])
-
-    #var     = np.zeros([nl])
-    meanvar = np.zeros([nh])
-
+    
     #Number of  time thar variable was sum 
     cont    = np.zeros(nh)
+
+    #number of process used to read the files 
+    nprocess=len(var)
+
+
+    for k in range(0,nprocess):
+        
+        #Lengh of the time array to search
+        try:
+            ndtp    = len(var[k].Time) 
+            time='Time'
+        except:
+            ndtp    = len(var[k].time) 
+            time='time'
+        
+        for i in range(0,ndtp):
+        
+            for j in range(0,nh,ch):
     
-    for i in range(0,ndtp):
+                if int(var[k][i][time].dt.hour)==j+hi: 
     
-        for j in range(0,nh,ch):
-
-            if int(var[i].Time.dt.hour)==j+hi: 
-
-                hour[j]     =   j+hi
-
-                varsum[j] =   varsum[j]+var[i]
-
-                cont[j]     =   cont[j]+1
+                    hour[j]     =   j+hi
+    
+                    varsum[j] =   varsum[j]+var[k][i]
+    
+                    cont[j]     =   cont[j]+1
+    
+        k+=1
 
 
     for j in range(0,nh-ch,ch):

@@ -121,6 +121,81 @@ def default_values_diff(exp,varst,lim,alt,var_to,color,explabel1,explabel2,axis_
 
     return lim,alt,var_to,color,explabel1,explabel2,axis_on,show
 
+def default_plot(plot_def,k): 
+
+    a1          =  [0.5,1,0.0]
+
+    if not plot_def:
+        plot_def=a1
+    else:
+        plot_def=plot_def[k]
+
+    return plot_def 
+
+def default_values_1d_new(ex,vname,lim,alt,var_to,color,explabel1,explabel2,plot_def,show,k,j): 
+
+    name    =   str(ex.name.values)#+'_'+dates[0]
+    maxv=np.min(ex[vname].values)#.max
+    minv=np.max(ex[vname].values)#.min
+
+    maxh=np.min(ex.time.values)#.max
+    minh=np.max(ex.time.values)#.min
+
+    interval_x=4
+    interval_y=int(maxv/4)
+    #maxt=np.max(0)
+    #mint=np.min(len(ex.nc_f[var]))
+    #lim1.append([mint,maxt,interval_x])
+
+    if not lim:
+        lim=[minh,maxh,interval_x]
+    else:
+        lim=lim[j]
+
+    if not alt:
+        alt=[minv,maxv,interval_y]        
+    else:
+        alt=alt[j]
+
+    if not var_to:
+        var_to=1
+    else:
+        var_to=var_to[j]
+
+    if not color:
+        color='red'
+    else:
+        color=color[k]
+
+    if not explabel1:
+        explabel1=''
+    else:
+        explabel1=explabel1[k]
+
+    if not explabel2:
+        explabel=[]
+        local2=[]
+    else:
+        explabel2=explabel2[k]
+
+
+    X="Time"#.format(ex.time.units)
+    Y="{} {}".format(vname,ex[vname].units)
+
+    a1          =  [ [X,Y],[X,0,0],[False,'upper left'],[0.5,1,0.0]]
+
+    if not plot_def:
+        plot_def=a1
+    else:
+        plot_def=plot_def[j]
+
+    if not show:
+        show=True
+    else:
+        show=show
+
+    return lim,alt,var_to,color,explabel1,explabel2,plot_def,show
+
 def default_values_1d(exp,varst,lim,alt,var_to,color,explabel1,explabel2,plot_def,show,k): 
 
     el=len(exp) 
@@ -155,6 +230,7 @@ def default_values_1d(exp,varst,lim,alt,var_to,color,explabel1,explabel2,plot_de
         #Getting the Defaul values
         maxv=np.max(ex.nc_f[var])
         minv=np.min(ex.nc_f[var])
+
         interval_y=int(maxv/4)
 
         maxt=np.max(0)
@@ -217,6 +293,50 @@ def default_temporal_mpas(ex,var,vname,hours,lim,var_to,color,explabel1,explabel
     return lim,var_to,color,explabel1,explabel2,leg_loc,show
 
 ##################################
+def default_values_sam_2d_kj(ex,vname,z,lim,alt,var_to,color,explabel1,explabel2,leg_loc,show,k,j): 
+
+    name    =   str(ex.name.values)#+'_'+dates[0]
+
+    maxv=np.min(ex[vname].values)#.max
+    minv=np.max(ex[vname].values)#.min
+
+
+    minh=np.min(z[:]/1000.0)
+    maxh=np.max(z[:]/1000.0)
+
+    lim.append([minv,maxv,10])
+    alt.append([minh,maxh])         
+
+    var_to.append(1)
+
+    color.append('BuRd_r')
+
+    exl1=0
+    exl2=0
+
+    if not explabel1:
+        exl1=''
+    else: 
+        exl1=explabel1[k][j]
+
+    if not explabel2:
+        exl2=''
+    else: 
+        exl2=explabel2[k][j]
+
+
+    ll1=[(maxv-minv)/4.0+minv,maxh*0.90]
+    #legent loc
+    l1         = (ll1,ll1,['vertical',True,'[%s]'%ex[vname].units],['%s'%vname,True],['z',True],[1,1])
+
+    leg_loc.append(l1)
+
+    show='True'
+
+    return lim,alt,var_to,color,exl1,exl2,leg_loc,show
+
+
+##################################
 def default_values_sam_2d(ex,vname,z,lim,alt,var_to,color,explabel1,explabel2,leg_loc,show): 
 
     name    =   str(ex.name.values)#+'_'+dates[0]
@@ -228,7 +348,6 @@ def default_values_sam_2d(ex,vname,z,lim,alt,var_to,color,explabel1,explabel2,le
     minh=np.min(z[:]/1000.0)
     maxh=np.max(z[:]/1000.0)
 
-
     lim.append([minv,maxv,10])
     alt.append([minh,maxh])         
 
@@ -236,8 +355,10 @@ def default_values_sam_2d(ex,vname,z,lim,alt,var_to,color,explabel1,explabel2,le
 
     color.append('BuRd_r')
 
-    explabel1.append('')
-    explabel2.append('')
+    if not explabel1:
+        explabel1.append(['',''])
+    if not explabel2:
+        explabel2.append(['',''])
 
     ll1=[(maxv-minv)/4.0+minv,maxh*0.90]
     #legent loc
@@ -251,7 +372,7 @@ def default_values_sam_2d(ex,vname,z,lim,alt,var_to,color,explabel1,explabel2,le
 
 
 ##################################
-def default_values_sam_diurnal(ex,vname,z,lim,alt,var_to,color,explabel1,explabel2,leg_loc,diurnal,show): 
+def default_values_sam_diurnal(ex,vname,z,lim,alt,var_to,color,explabel1,explabel2,leg_loc,diurnal,show,k,j): 
 
     name    =   str(ex.name.values)#+'_'+dates[0]
 
@@ -262,27 +383,56 @@ def default_values_sam_diurnal(ex,vname,z,lim,alt,var_to,color,explabel1,explabe
     minh=np.min(z[:]/1000.0)
     maxh=np.max(z[:]/1000.0)
 
+    if not lim:
+        lim=[minv,maxv]
+    else:
+        lim=lim[j]
 
-    lim.append([minv,maxv])
-    alt.append([minh,maxh])         
+    if not alt:
+        alt=[minh,maxh]        
+    else:
+        alt=alt[j]
 
-    var_to.append(1)
+    if not var_to:
+        var_to=1
+    else:
+        var_to=var_to[j]
 
+    if not color:
+        color='Red'
+    else:
+        color=color[j]
 
-    color.append('Red')
+    if not explabel1:
+        explabel1=''
+    else:
+        explabel1=explabel1[k][j]
 
-    explabel1.append('')
-    explabel2.append('')
+    if not explabel2:
+        explabel=[]
+        local2=[]
+    else:
+        explabel2=explabel2[k][j]
 
-    ll1=[(maxv-minv)/4.0+minv,maxh*0.90]
+    ll1=[(maxv-minv)/4.0+minv,maxh*0.8]
+
     #legent loc
-    l1         = (ll1,ll1,['upper right',False],['%s'%vname,True],['z',True],[1,1])
+    l1         = (ll1,local2,['upper right',False],['%s'%vname,True],['z',True],[1,1])
 
-    leg_loc.append(l1)
+    if not leg_loc:
+        leg_loc=l1
+    else:
+        leg_loc=leg_loc[j]
 
-    diurnal.append('True')
+    if not diurnal:
+        diurnal=[1,'True',[]]
+    else:
+        diurnal=diurnal[j]
 
-    show.append('True')
+    if not show:
+        show=True
+    else:
+        show=show
 
     return lim,alt,var_to,color,explabel1,explabel2,leg_loc,diurnal,show
 

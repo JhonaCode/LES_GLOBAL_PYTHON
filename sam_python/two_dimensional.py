@@ -115,7 +115,7 @@ def plot2d_contour(exp,var=[],contour=[],alt=[],days=[],explabel1=[],explabel2=[
             if(axis_on[k][j][2]):
                 plt.ylabel(r'z [km]')
 
-            plt.savefig('%s/%s_2d_%s.pdf'%(file_fig,ex.name,vtex), format='pdf',bbox_inches='tight', dpi=1000)
+            plt.savefig('%s/%s_2d_%s.pdf'%(file_fig,ex.name,vtex), format='pdf',bbox_inches='tight', dpi=200)
             
             #print(defaul )
             if show[k][j]:

@@ -9,7 +9,7 @@ import  sam_python.figure_own          as fown
 
 import  sam_python.campain_data        as cd
 
-from    sam_python.plotparameters      import *
+import  sam_python.plotparameters      as pp
 
 from    files_direction                import file_fig, file_temporal,tplot_size
 
@@ -49,6 +49,15 @@ import  sam_python.default_values as df
 #import  campain_data  as cd
 import  sam_python.data_own       as down
 
+import importlib
+
+import subprocess, sys
+
+#to cp the parametres defaul 
+subprocess.run('cp Parameters_default.py /pesq/dados/bamc/jhonatan.aguirre/git_repositories/MAPS_python/sam_python/', shell = True, executable="/bin/bash")
+
+pars=importlib.import_module('.Parameters_default','sam_python',)
+
 
 #var_all.append(var[ni:nf]) 
 #
@@ -57,6 +66,84 @@ import  sam_python.data_own       as down
 #Where the hour and seconds are really important
 #day0=0
 #data = down.data_to_reference(ex.data,day0,days[0][4])
+
+def temporal_plot_exp_var_xr(exp,date=[],variables=[],var_to=[],explabel1=[],days=[],explabel2=[],alt=[],plot_def=[],lim=[],color=[],show=[]):
+
+    j=0
+    for var in variables:
+
+        print("___________________")
+        print("%s"%(var))
+        print("___________________")
+
+        plot_defu=df.default_plot(plot_def,j)
+
+        size_wg = plot_defu[3][0]
+        size_hf = plot_defu[3][1]
+        cmm     = plot_defu[3][2]
+
+        tama= pp.plotsize(size_wg,size_hf, cmm,'temporal')
+
+        fig  = plt.figure()
+        ax   = plt.axes()
+
+        k=0
+        for ex in exp:
+
+            limu,altu,var_tou,coloru,explabel1u,explabel2u,plot_defu,showu=df.default_values_1d_new(ex,var,lim,alt,var_to,color,explabel1,explabel2,plot_def,show,k,j)
+
+            print("___________________")
+            print("__%s__"%(ex.name))
+            print("___________________")
+
+            #if name:
+            name    =   str(ex.name.values)#+'_'+dates[0]
+
+            print("_temporal__%s__"%(name))
+
+            #date_format = '%Y%m%d%H%M%S'
+            date_format = '%Y-%m-%dT%H'
+            datei=dt.datetime.strptime(date[k][0], date_format)
+            datef=dt.datetime.strptime(date[k][1], date_format)
+    
+            time1 = np.datetime64(date[k][0]) 
+            time2 = np.datetime64(date[k][1])
+    
+            ni,nf=down.data_n(time1,time2,ex.time.values) 
+            #print(time1,ni)
+            #print(time2,nf)
+            #print('llltime2')
+    
+            tovar= ex.sel(time=slice(ex.time[ni],ex.time[nf-1]))
+
+            #time1=tovar.time.values 
+            time11   =   tovar.ltime[ni:nf]
+            #time1   =   ex.ltime[0].dt.day
+            #print(time1.values)
+            #exit()
+            time22=down.data_to_reference_vector(time11,1,1,2025)
+            #print(time22)
+            #exit()
+    
+            data=tovar[var]*var_tou
+
+            ax.grid(axis='y',linewidth=1.0,alpha=0.5,dashes=[1,1,0,0] )
+            plt.plot(time22,data,label='%s'%(explabel1u),color=coloru,linewidth=1.0,alpha=1.0)
+
+            k+=1
+
+        fig,ax=plot_temporal_axis(fig,ax,ex,altu,limu,plot_defu)
+
+        label="%s_%s"%(name,var)
+
+        plt.savefig('%s/temporal_%s.pdf'%(pars.out_fig,label),bbox_inches='tight', format='pdf', dpi=200)
+
+        j+=1
+
+    if showu:
+        plt.show()
+
+    return fig
 
 def temporal_plot_var_exp(exp,var=[],var_to=[],explabel1=[],days=[],explabel2=[],alt=[],plot_def=[],lim=[],color=[],show=[]):
 
@@ -377,7 +464,12 @@ def plot_temporal_axis(fig,ax,ex,alt,lim,plot_def):
     ax.xaxis.set_minor_locator(locatormin)
     ax.xaxis.set_major_locator(locatormax )
 
-    d1=dt.datetime(plot_def[1][1][0],plot_def[1][1][1],plot_def[1][1][2],plot_def[1][1][3])
+
+    #d1=dt.datetime(plot_def[1][1][0],plot_def[1][1][1],plot_def[1][1][2],plot_def[1][1][3])
+    date_format = '%Y-%m-%dT%H'
+    #d1=dt.datetime.strptime(plot_def[1][1], date_format)
+    d1 = np.datetime64(plot_def[1][1]) 
+    #d1=dt.datetime(plot_def[1][1],plot_def[1][1],plot_def[1][2],plot_def[1][3])
 
     plt.xlabel(r'%s'%(plot_def[0][0])) 
     plt.ylabel(r'%s'%(plot_def[0][1])) 

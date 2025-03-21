@@ -7,6 +7,7 @@ from    matplotlib.colors import LinearSegmentedColormap
 
 from matplotlib.ticker import (MultipleLocator, LinearLocator,NullFormatter,
                                    ScalarFormatter)
+import matplotlib.ticker as tkr
 
 
 #To work with date in plots 
@@ -56,7 +57,9 @@ def d2_plot_im_diff(var,z,alt,contour,colors,explabel,leg_loc,hours=[]):
     size_wg = leg_loc[5][0]
     size_hf = leg_loc[5][1]
 
-    pp.plotsize(size_wg,size_hf, 0.0,'2d')
+    #print(pars.plotdef)
+    tama= pp.plotsize(size_wg,size_hf, 0.0,pars.plotdef)
+
 
     ################################3
     fig = plt.figure()
@@ -98,6 +101,8 @@ def d2_plot_im_diff(var,z,alt,contour,colors,explabel,leg_loc,hours=[]):
     #CU=ax.contourf(X,Y,MF.T,levels=levels, interpolation='bilinear',origin='lower',cmap=colors,aspect='auto',extend='both');
     CU=ax.contourf(X,Y,Z,levels=levels,origin='lower',cmap=colors);
 
+    plt.grid(color = 'gray', linestyle = '--', linewidth = 0.25)
+
     # Set all level lines to black
     #line_colors = ['black' for l in CU.levels]
     line_colors = ['darkgrey' for l in CU.levels]
@@ -108,7 +113,11 @@ def d2_plot_im_diff(var,z,alt,contour,colors,explabel,leg_loc,hours=[]):
     #plot_bar
     if(leg_loc[2][1]):
 
-        CB = fig.colorbar(CU, shrink=1.0, extend='neither',orientation=leg_loc[2][0])
+        CB = fig.colorbar(CU, shrink=1.0, extend='neither',orientation=leg_loc[2][0], format=tkr.FormatStrFormatter('%.2f'))
+
+
+        CB.ax.tick_params(labelsize=tama) 
+
 
         if(contour[0]>contour[1]):
 
@@ -146,15 +155,15 @@ def d2_plot_im_diff(var,z,alt,contour,colors,explabel,leg_loc,hours=[]):
         ax.set_xlim([hours[0],hours[1]])
 
     ax.set_ylim([alt[0],alt[1]])
-    ax.yaxis.set_major_locator(plt.MultipleLocator(2.0))
+    ax.yaxis.set_major_locator(plt.MultipleLocator(1.0))
 
-    ax=label_plots(x,ax,leg_loc,explabel[1],explabel[2])
+    ax=label_plots(x,ax,leg_loc,explabel[1],explabel[2],tama)
 
     plt.savefig('%s/vertical_2d_%s.pdf'%(pars.out_fig,explabel[0]),bbox_inches='tight',dpi=200, format='pdf')
 
     return fig,ax    
 
-def label_plots(time,ax,legend,explabel1,explabel2): 
+def label_plots(time,ax,legend,explabel1,explabel2,tama): 
 
     #leg_loc      =  ( [ 0.5,4.2],[ 0.5,4.2],[vertical,True],[xlabel,'True'],[ylabel,'True'],[size_wg,size_hf])
 
@@ -162,14 +171,16 @@ def label_plots(time,ax,legend,explabel1,explabel2):
 
     ylabel=legend[4][0]
 
-    ax.text(time[legend[0][0]], legend[0][1], r' %s'%(explabel1), fontsize=8, color='black')
+    ax.text(time[legend[0][0]], legend[0][1], r' %s'%(explabel1), fontsize=tama, color='black')
 
-    ax.text(time[legend[0][0]], legend[0][1], r' %s'%(explabel2), fontsize=8, color='black')
+    ax.text(time[legend[0][0]], legend[0][1], r' %s'%(explabel2), fontsize=tama, color='black')
 
     if( legend[3][1]==True):
-        plt.xlabel(r'%s'%(xlabel)) 
+        plt.xlabel(r'%s'%(xlabel), fontsize=tama) 
 
     if( legend[4][1]==True):
-        plt.ylabel(r'%s'%(ylabel)) 
+        plt.ylabel(r'%s'%(ylabel), fontsize=tama) 
+
+
 
     return ax
