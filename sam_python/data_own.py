@@ -17,6 +17,8 @@ def data_load_xr(path,name,calendar):
     exp            =  xr.open_dataset(path, engine='netcdf4')
     exp['name']    =  name
 
+    exp['BR']   =  exp['SHF']/exp['LHF']
+
     exp['netsf']   =  exp['SWNS']-exp['LWNS']
     exp['netsf_dw']=  exp['SWDS']-exp['LWDS']
 
@@ -33,8 +35,9 @@ def data_load_xr(path,name,calendar):
     #hi=di.hour
     ##final hour
     #hf=df.hour
-
+    time=exp.time.values
     exp['time']=exp.ltime.values
+    exp['ltime']=time
 
     return exp 
 

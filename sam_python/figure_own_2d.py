@@ -282,8 +282,9 @@ def d2_plot_im_diff(ex,time,z,var,contour,label,origin,colors,axis_on):
     Z = ndimage.gaussian_filter(MF.T, sigma=1.0, order=0)
 
 
-    #CU=ax.contourf(X,Y,MF.T,levels=levels, interpolation='bilinear',origin='lower',cmap=colors,aspect='auto',extend='both');
-    CU=ax.contourf(X,Y,Z,levels=levels,origin='lower',cmap=colors);
+    exit() 
+    CU=ax.contourf(X,Y,MF.T,levels=levels, interpolation='bilinear',origin='lower',cmap=colors,aspect='auto',extend='both');
+    #CU=ax.contourf(X,Y,Z,levels=levels,origin='lower',cmap=colors);
 
 
     #CU=ax.imshow(MF.T, interpolation='bilinear',origin='lower',cmap=colors,aspect='auto');

@@ -164,6 +164,70 @@ def two_dimensional_exps_sam_xr(exp,variables,date,name=[],explabel1=[],explabel
 
             j+=1
 
+        k+=1
+
+    if show[0]:
+
+        plt.show()
+    
+    plt.close('all')
+
+    return 
+
+def two_dimensional_diff_xr(exp,variables,date,name=[],explabel1=[],explabel2=[],alt=[],contour=[],var_to=[],color=[],leg_loc=[],show=[]):
+
+    k=0
+    for ex in exp:
+
+        name="%s-%s"%(ex[0].name.values,ex[1].name.values)
+
+        print("___________________")
+        print("__%s-%s__"%(ex[0].name.values,ex[1].name.values))
+        print("___________________")
+
+        #date_format = '%Y%m%d%H%M%S'
+        date_format = '%Y-%m-%dT%H'
+        datei=dt.datetime.strptime(date[k][0], date_format)
+        datef=dt.datetime.strptime(date[k][1], date_format)
+
+        time1 = np.datetime64(date[k][0]) 
+        time2 = np.datetime64(date[k][1])
+
+        ni,nf=down.data_n(time1,time2,ex[0].time.values) 
+        tovar1= ex[0].sel(time=slice(ex[0].time[ni],ex[0].time[nf]))
+
+        ni,nf=down.data_n(time1,time2,ex[1].time.values) 
+        tovar2= ex[1].sel(time=slice(ex[1].time[ni],ex[1].time[nf]))
+
+        j=0
+        for var in variables:
+        
+            print("___________________")
+            print("%s"%(var))
+            print("___________________")
+
+            #Its no necessary to calculate de height
+            z=ex[0].z.values
+
+            hours=[datei,datef]
+
+            contour,alt,var_to,color,exl1,exl2,leg_loc,show=df.default_values_sam_2d_kj(ex[0],var,z,contour,alt,var_to,color,explabel1,explabel2,leg_loc,show,k,j)
+
+            data=(tovar1[var][:,:]-tovar2[var][:,:])*var_to[j]
+
+            fig_label='diff_'+name+'_'+var
+
+
+            figs,axis  = fown.d2_plot_im_diff(data,z,alt[j],contour[j],color[j],[fig_label,exl1,exl2],leg_loc[j],hours=hours)
+
+            #plot_bar
+            #if(axis_on[3]):
+            figs,axis=fown.base_top_cloud(figs,axis,ex[0])
+
+            plt.savefig('%s/vertical_2d_%s.pdf'%(pars.out_fig,fig_label),bbox_inches='tight',dpi=200, format='pdf')
+
+
+            j+=1
 
         k+=1
 
@@ -174,5 +238,4 @@ def two_dimensional_exps_sam_xr(exp,variables,date,name=[],explabel1=[],explabel
     plt.close('all')
 
     return 
-
 

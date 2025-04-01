@@ -17,6 +17,8 @@ import  matplotlib as mpl
 
 from datetime import datetime, timedelta
 
+import datetime as dt
+
 import  sam_python.data_own as down
 
 #Filter the function, more smothy
@@ -99,7 +101,8 @@ def d2_plot_im_diff(var,z,alt,contour,colors,explabel,leg_loc,hours=[]):
     Z = ndimage.gaussian_filter(MF.T, sigma=1.0, order=0)
 
     #CU=ax.contourf(X,Y,MF.T,levels=levels, interpolation='bilinear',origin='lower',cmap=colors,aspect='auto',extend='both');
-    CU=ax.contourf(X,Y,Z,levels=levels,origin='lower',cmap=colors);
+    CU=plt.contourf(X,Y,MF.T,levels=levels,origin='lower',cmap=colors,extend='neither');
+    #CU=ax.contourf(X,Y,Z,levels=levels,origin='lower',cmap=colors);
 
     plt.grid(color = 'gray', linestyle = '--', linewidth = 0.25)
 
@@ -108,11 +111,12 @@ def d2_plot_im_diff(var,z,alt,contour,colors,explabel,leg_loc,hours=[]):
     line_colors = ['darkgrey' for l in CU.levels]
 
     #Contour plot 
-    CS=plt.contour(X,Y,Z,levels=levels[1:len(levels):2],colors=line_colors,linewidths=0.1 );
+    CS=ax.contour(X,Y,MF.T,levels=levels[1:len(levels):2],colors=line_colors,linewidths=0.1 );
 
     #plot_bar
     if(leg_loc[2][1]):
 
+        #CB = plt.colorbar()
         CB = fig.colorbar(CU, shrink=1.0, extend='neither',orientation=leg_loc[2][0], format=tkr.FormatStrFormatter('%.2f'))
 
 
@@ -137,8 +141,12 @@ def d2_plot_im_diff(var,z,alt,contour,colors,explabel,leg_loc,hours=[]):
 
 
         #CB.set_ticks(cbarlabels[1::4])
-        CB.ax.set_title(r'%s'%leg_loc[2][2])
+        CB.ax.set_title(r'%s'%leg_loc[2][2],size=tama)
 
+
+    #plot_bar
+    #if(axis_on[3]):
+    #fig,ax=base_top_cloud(fig,ax,var)
 
     ax.xaxis_date()
 
@@ -162,6 +170,210 @@ def d2_plot_im_diff(var,z,alt,contour,colors,explabel,leg_loc,hours=[]):
     plt.savefig('%s/vertical_2d_%s.pdf'%(pars.out_fig,explabel[0]),bbox_inches='tight',dpi=200, format='pdf')
 
     return fig,ax    
+
+def base_top_cloud(fig,ax,ex):
+
+    size= ex.time.shape[0]
+    tam = ex.MCUP.shape[0]
+
+    #max heigh points
+    #ex: resolution (50m)*30
+    #for gomazon paper 
+    #maxl=30
+
+    #for arm paper 
+    maxl=80
+
+    ctop  =[]
+    ctop2 =[]
+    cbase =[]
+    cbase2=[]
+    pblh  =[]
+    cmflx =[]
+
+    for i in range(0,tam):
+
+        index1  =  np.argmin(ex.TVFLUX[i][0:maxl].values)
+        indexc  =  np.argmax(   ex.CLD[i][0:maxl].values)
+
+        #for j in range(1,10):
+        #for goamazon 
+        #for j in range(1,5):
+        for j in range(1,20):
+
+            index2=index1+j
+
+            if ex.TVFLUX[i][index2].values>0 and index1>3:
+
+                indexmin=index2
+
+                break
+
+            else:
+                    indexmin=index1
+
+        #for gomazon paper
+        #for i1 in range(0,70):
+        for i1 in range(0,100):
+
+             index3=indexmin+i1
+
+             #paper goamazon
+             #if ex.QC[i][index3]<0.001 :
+             if ex.QC[i][index3].values<0.005 :
+
+                 indexmax=index3
+
+                 break
+        #for i2 in range(0,70):
+
+        #         index4=indexmin+i1
+
+        #         if ex.CLD[i][index4]<0.001 :
+
+        #             indexmax2=index4
+
+        #             break
+
+        #for i1 in range(0,70):
+
+        #    index3=indexmin+i1
+
+        #    if ex.CLD[i][index3]<0.0005:
+
+        #        indexmax=index3
+
+        #        break
+
+        ##for i1 in range(0,70):
+
+        ##    index3=indexmin+i1
+
+        ##    if ex.MCUP[i][index3]<0.001:
+
+        ##        indexmax=index3
+
+        ##        break
+
+
+
+        pblh.append(ex.z[index1].values/1000.0)
+        cbase.append(ex.z[indexmin].values/1000.0)
+        cmflx.append(ex.MCUP[i,indexmin].values)
+        cbase2.append(ex.z[indexc].values/1000.0)
+        ctop.append(ex.z[indexmax].values/1000.0)
+
+    step=1
+
+    #Limits of time date
+    #idi2     = datetime(ex.datei.year,ex.datei.month,ex.datei.day,10)#dt.datetime(2014, days[2] ,days[0], 10)
+    #idf2     = datetime(ex.datef.year,ex.datef.month,ex.datef.day,18)#dt.datetime(2014, days[2] ,days[0], 10)
+    ##idf2     = ex.datef#dt.datetime(2014, days[3] ,days[0], 18)
+    date_format = '%Y-%m-%dT%H'
+    idi2=dt.datetime.strptime('2025-01-01T10', date_format)
+    idf2=dt.datetime.strptime('2025-01-01T17', date_format)
+    time1 = np.datetime64(idi2) 
+    time2 = np.datetime64(idf2) 
+
+    ni2,nf2= down.data_n(time1,time2,ex.time[:].values)
+
+    # To find 13 and 14 hours
+    #i13     = datetime(ex.datef.year,ex.datef.month,ex.datef.day,13)#dt.datetime(2014, days[2] ,days[0], 10)
+    #i14     = datetime(ex.datef.year,ex.datef.month,ex.datef.day,14)#dt.datetime(2014, days[2] ,days[0], 10)
+    i13=dt.datetime.strptime('2025-01-01T13', date_format)
+    i14=dt.datetime.strptime('2025-01-01T14', date_format)
+    i3 = np.datetime64(i13) 
+    i4 = np.datetime64(i14) 
+
+    n13,n14= down.data_n(i3,i4,ex.time[:].values)
+
+
+    #TO find the cloud fraction max
+    cbi    =np.argmax(cbase)
+    cbmax   =cbase[cbi]
+    cbmax14 =cbase[n14]
+
+    #TO find the mass flux max
+    mfi   =np.argmax(cmflx)
+    mfmax =cmflx[mfi]
+    cbmf  =cbase[mfi]
+
+    #Tree ways to calculate the max 
+    #topmax=np.max(ctop)
+
+    top_cb  =ctop[cbi]
+    top_14  =ctop[n14]
+    top_mf  =ctop[mfi]
+
+    print(ex.time[mfi],'mfmax')
+    print(ex.time[cbi],'cbmax')
+    #print(ex.date[n14],'14')
+
+
+    #############
+    print('######')
+    print('CB base='   ,cbmax)
+    print('CB base 14=',cbmax14)
+    print('MF base='   ,cbmf)
+
+    #############
+    print('######')
+    print('CB top='   ,top_cb)
+    print('CB top 14=',top_14)
+    print('MF top='   ,top_mf)
+
+    #############
+    print('######')
+    print('CB    Deep=',top_cb-cbmax)
+    print('CB 14 Deep=',top_14-cbmax14)
+    print('MF Deep=',top_mf-cbmf)
+    
+
+    n = 3#nf2-ni2  # the larger n is, the smoother curve will be
+    b = [1.0 / n] * n
+    a = 1
+
+
+    cbasef = lfilter(b, a, cbase)
+
+    pblhf = lfilter(b, a, pblh)
+
+    ctopf = lfilter(b, a, ctop)
+
+    ax.plot( ex.time[ni2:nf2:step]     , cbasef[ni2:nf2:step] ,color='indigo' ,dashes=[2,1]  ,linewidth=1.0,alpha=1.0,marker='')
+
+    ax.plot( ex.time[ni2:nf2:step]     , pblhf[ni2:nf2:step]  ,color='black'     ,linewidth=2.0,alpha=1.0,marker='')
+
+    ax.plot( ex.time[ni2:nf2:step]     , ctopf[ni2:nf2:step]  ,color='grey' ,  dashes=[2,1]  ,linewidth=1.0,alpha=1.0,marker='')
+
+    ax.plot( ex.time[ni2:nf2:step]     , cbase2[ni2:nf2:step]  ,color='red' ,  dashes=[2,1]  ,linewidth=1.0,alpha=1.0,marker='')
+
+
+    ytex,ytex2= down.data_n(time1,time2,ex.time[:].values)
+
+    text1   ='$\mathrm{h_{base}}$'
+    idtex1  = idf2-timedelta(hours=8, minutes=0)
+    ax.text(idtex1, pblhf[ytex]+0.2 , r' %s'%(text1), fontsize=7, color='red')
+
+    text2='$\mathrm{Z_i}$'
+    idtex1    = idf2-timedelta(hours=0, minutes=0)
+    ax.text(idtex1,pblhf[ytex2] -0.1 , r' %s'%(text2), fontsize=7, color='black')
+
+    text1='LFC'
+    #text1='NCL'
+    idtex2    = idf2-timedelta(hours=0, minutes=0)
+    ax.text(idtex2,cbasef[ytex2]+0.1 , r' %s'%(text1), fontsize=7, color='indigo')
+
+    text3='$\mathrm{h_{top}}$'
+    #text3='$\mathrm{h_{topo}}$'
+    idtex3    = idf2-timedelta(hours=0, minutes=0)
+    ax.text(idtex3,ctopf[ytex2]-0.0 , r' %s'%(text3), fontsize=7, color='black')
+
+    #if ex.name=='m_w_l' or  ex.name=='large':
+    #    ax.text(idtex3,ctopf[ytex2]-0.4 , r' %s'%(text3), fontsize=7, color='black')
+    #else :
+
+    return fig,ax
 
 def label_plots(time,ax,legend,explabel1,explabel2,tama): 
 

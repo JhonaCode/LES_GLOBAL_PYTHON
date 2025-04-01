@@ -67,7 +67,7 @@ pars=importlib.import_module('.Parameters_default','sam_python',)
 #day0=0
 #data = down.data_to_reference(ex.data,day0,days[0][4])
 
-def temporal_plot_exp_var_xr(exp,date=[],variables=[],var_to=[],explabel1=[],days=[],explabel2=[],alt=[],plot_def=[],lim=[],color=[],show=[]):
+def temporal_plot_exp_var_xr(exp,date=[],variables=[],var_to=[],explabel1=[],days=[],explabel2=[],alt=[],plot_def=[],color=[],show=[]):
 
     j=0
     for var in variables:
@@ -87,10 +87,12 @@ def temporal_plot_exp_var_xr(exp,date=[],variables=[],var_to=[],explabel1=[],day
         fig  = plt.figure()
         ax   = plt.axes()
 
+
         k=0
+        label=''
         for ex in exp:
 
-            limu,altu,var_tou,coloru,explabel1u,explabel2u,plot_defu,showu=df.default_values_1d_new(ex,var,lim,alt,var_to,color,explabel1,explabel2,plot_def,show,k,j)
+            limu,altu,var_tou,coloru,explabel1u,explabel2u,plot_defu,showu=df.default_values_1d_new(ex,var,date,alt,var_to,color,explabel1,explabel2,plot_def,show,k,j)
 
             print("___________________")
             print("__%s__"%(ex.name))
@@ -110,36 +112,114 @@ def temporal_plot_exp_var_xr(exp,date=[],variables=[],var_to=[],explabel1=[],day
             time2 = np.datetime64(date[k][1])
     
             ni,nf=down.data_n(time1,time2,ex.time.values) 
-            #print(time1,ni)
-            #print(time2,nf)
-            #print('llltime2')
     
             tovar= ex.sel(time=slice(ex.time[ni],ex.time[nf-1]))
 
-            #time1=tovar.time.values 
             time11   =   tovar.ltime[ni:nf]
-            #time1   =   ex.ltime[0].dt.day
-            #print(time1.values)
-            #exit()
+
             time22=down.data_to_reference_vector(time11,1,1,2025)
-            #print(time22)
-            #exit()
     
             data=tovar[var]*var_tou
 
             ax.grid(axis='y',linewidth=1.0,alpha=0.5,dashes=[1,1,0,0] )
+            ax.grid(axis='x',linewidth=1.0,alpha=0.5,dashes=[1,1,0,0] )
             plt.plot(time22,data,label='%s'%(explabel1u),color=coloru,linewidth=1.0,alpha=1.0)
 
             k+=1
 
+            label=label+'_'+"%s"%(name)
+
         fig,ax=plot_temporal_axis(fig,ax,ex,altu,limu,plot_defu)
 
-        label="%s_%s"%(name,var)
+        #label="%s_%s"%(name,var)
+        label=label+"_%s"%(var)
 
-        plt.savefig('%s/temporal_%s.pdf'%(pars.out_fig,label),bbox_inches='tight', format='pdf', dpi=200)
+        plt.savefig('%s/temporal%s.pdf'%(pars.out_fig,label),bbox_inches='tight', format='pdf', dpi=200)
 
         j+=1
 
+    if showu:
+        plt.show()
+
+    return fig
+
+def temporal_plot_cloud_xr(exp,date=[],variables=[],var_to=[],explabel1=[],days=[],explabel2=[],alt=[],plot_def=[],color=[],show=[]):
+
+    print("___________________")
+    print("%s"%(variables))
+    print("___________________")
+    
+    plot_defu=df.default_plot(plot_def,0)
+    
+    size_wg = plot_defu[3][0]
+    size_hf = plot_defu[3][1]
+    cmm     = plot_defu[3][2]
+    
+    tama= pp.plotsize(size_wg,size_hf, cmm,'temporal')
+    
+    fig  = plt.figure()
+    ax   = plt.axes()
+    
+    k=0
+    label=''
+    for ex in exp:
+    
+        limu,altu,var_tou,coloru,explabel1u,explabel2u,plot_defu,showu=df.default_values_1d_new(ex,variables[0],date,alt,var_to,color,explabel1,explabel2,plot_def,show,k,0)
+
+        #limu2,altu2,var_tou2,coloru2,explabel1u,explabel2u,plot_defu,showu=df.default_values_1d_new(ex,variable[1],date,alt,var_to,color,explabel1,explabel2,plot_def,show,k,j)
+    
+        print("___________________")
+        print("__%s__"%(ex.name))
+        print("___________________")
+    
+        #if name:
+        name    =   str(ex.name.values)#+'_'+dates[0]
+    
+        print("_temporal__%s__"%(name))
+    
+        #date_format = '%Y%m%d%H%M%S'
+        date_format = '%Y-%m-%dT%H'
+        datei=dt.datetime.strptime(date[k][0], date_format)
+        datef=dt.datetime.strptime(date[k][1], date_format)
+    
+        time1 = np.datetime64(date[k][0]) 
+        time2 = np.datetime64(date[k][1])
+    
+        ni,nf=down.data_n(time1,time2,ex.time.values) 
+        #print(time1,ni)
+        #print(time2,nf)
+        #print('llltime2')
+    
+        tovar= ex.sel(time=slice(ex.time[ni],ex.time[nf-1]))
+    
+        #time1=tovar.time.values 
+        time11   =   tovar.ltime[ni:nf]
+        #time1   =   ex.ltime[0].dt.day
+        #print(time1.values)
+        #exit()
+        time22=down.data_to_reference_vector(time11,1,1,2025)
+        #print(time22)
+        #exit()
+    
+        data1=tovar[variables[0]]*var_tou
+        data2=tovar[variables[1]]*var_tou
+    
+        ax.grid(axis='y',linewidth=1.0,alpha=0.5,dashes=[1,1,0,0] )
+
+        plt.plot(time22,data1,label='%s'%(explabel1u),color=coloru,linewidth=1.0,alpha=1.0)
+        plt.plot(time22,data2 , color=coloru,linewidth=1.0,alpha=1.0)
+    
+        k+=1
+    
+        label=label+'_'+"%s"%(name)
+    
+    fig,ax=plot_temporal_axis(fig,ax,ex,altu,limu,plot_defu)
+    
+    #label="%s_%s"%(name,var)
+    label=label+"_%s_%s"%(variables[0],variables[1])
+    
+    plt.savefig('%s/cloud_1d_%s.pdf'%(pars.out_fig,label),bbox_inches='tight', format='pdf', dpi=200)
+    
     if showu:
         plt.show()
 
@@ -473,6 +553,11 @@ def plot_temporal_axis(fig,ax,ex,alt,lim,plot_def):
 
     plt.xlabel(r'%s'%(plot_def[0][0])) 
     plt.ylabel(r'%s'%(plot_def[0][1])) 
+
+    lim1 = np.datetime64(lim[0]) 
+    lim2 = np.datetime64(lim[1]) 
+
+    plt.axis( [lim1,lim2,alt[0],alt[1]])
 
     ax.text(d1,plot_def[1][2], r'%s'%(plot_def[1][0]), fontsize=8, color='black')
 

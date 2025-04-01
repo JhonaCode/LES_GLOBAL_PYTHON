@@ -10,7 +10,7 @@ import  matplotlib.pyplot   as plt
 
 import  matplotlib          as mpl
 
-from    matplotlib.ticker   import MultipleLocator, FormatStrFormatter
+from    matplotlib.ticker   import MultipleLocator,AutoMinorLocator, FormatStrFormatter
 
 import  sam_python.data_own            as down
 
@@ -41,7 +41,7 @@ subprocess.run('cp Parameters_default.py /pesq/dados/bamc/jhonatan.aguirre/git_r
 pars=importlib.import_module('.Parameters_default','sam_python',)
 
 
-def label_plots(ax,legend,explabel1,explabel2): 
+def label_plots(ax,legend,explabel1,explabel2,tama): 
 
 #leg_loc      =  ( [ 0.5,4.2],[ 0.5,4.2],'center right',[xlabel,'True'],[ylabel,'True'],[size_wg,size_hf])
 
@@ -49,11 +49,11 @@ def label_plots(ax,legend,explabel1,explabel2):
 
     ylabel=legend[4][0]
 
-    ax.text(legend[0][0], legend[0][1], r' %s'%(explabel1), fontsize=8, color='black')
+    ax.text(legend[0][0], legend[0][1], r' %s'%(explabel1), fontsize=tama, color='black')
 
     if  legend[1]:
 
-        ax.text(legend[1][0], legend[1][1], r' %s'%(explabel2), fontsize=8, color='black')
+        ax.text(legend[1][0], legend[1][1], r' %s'%(explabel2), fontsize=tama, color='black')
 
     plt.grid(color = 'gray', linestyle = '--', linewidth = 0.25)
 
@@ -68,6 +68,88 @@ def label_plots(ax,legend,explabel1,explabel2):
 
 
     return ax
+
+def diurnal_tke_budget_xr(exp,hour,date,name=[],explabel1=[],explabel2=[],alt=[],lim=[],var_to=[],color=[],leg_loc=[],diurnal=[],show=[]): 
+
+    k=0
+    for ex in exp:
+
+        print("___________________")
+        print("__%s__"%(ex.name))
+        print("___________________")
+
+        #date_format = '%Y%m%d%H%M%S'
+        date_format = '%Y-%m-%dT%H'
+        datei=dt.datetime.strptime(date[k][0], date_format)
+        datef=dt.datetime.strptime(date[k][1], date_format)
+
+        time1 = np.datetime64(date[k][0]) 
+        time2 = np.datetime64(date[k][1])
+
+        ni,nf=down.data_n(time1,time2,ex.time.values) 
+        #ni,nf=down.data_n(datei,datef,ex.time.values) 
+
+        tovar= ex.sel(time=slice(ex.time[ni],ex.time[nf]))
+
+        #if name:
+        name    =   str(ex.name.values)#+'_'+dates[0]
+
+        print("_les__%s__"%(name))
+
+        #Its no necessary to calculate de height
+        z=ex.z.values
+
+        limu,altu,var_tou,coloru,explabel1u,explabel2u,leg_locu,diurnalu,showu=df.default_values_sam_diurnal(ex,'BUOYA',z,lim,alt,var_to,color,explabel1,explabel2,leg_loc,diurnal,show,-1,k)
+
+        #data1 = tovar[var][:,:]*var_tou
+        data2 = tovar['SHEAR'][:]*var_tou   #+ex.SHEARS[:]
+        data3 = tovar['BUOYA'][:]*var_tou   #+ex.BUOYAS[:]
+        data4 = tovar['ADVTR'][:]*var_tou   #+ex.ADVTRS[:]
+        data5 = tovar['PRESSTR'][:]*var_tou
+        data6 = tovar['DISSIP'][:]*var_tou  #+ex.DISSIPS[:]
+
+        size_wg = leg_locu[5][0]
+        size_hf = leg_locu[5][1]
+        tama=pp.plotsize(size_wg,size_hf, 0.0,'diurnal')
+
+        #To plot 
+        fig  = plt.figure()
+        ax   = plt.axes()
+
+
+        figs,ax = main_plot_hour(fig,ax,data2,hour,z,altu,['blue',[1,0]]        , 'S' )
+        figs,ax = main_plot_hour(fig,ax,data3,hour,z,altu,['red' ,[1,1]]        , 'B' )
+        #figs,ax = main_plot_hour(fig,ax,data4,hour,z,altu,['magenta',[2,1,2,1] ], 'P' )
+        figs,ax = main_plot_hour(fig,ax,data4,hour,z,altu,['magenta',[1,0] ], 'P' )
+        figs,ax = main_plot_hour(fig,ax,data5,hour,z,altu,['cyan',[2,1]      ]  , 'T' )
+        figs,ax = main_plot_hour(fig,ax,data6,hour,z,altu,['green',[1,0]     ]  , 'D' )
+
+        plt.axis([limu[0],limu[1],altu[0],altu[1]])
+
+        plt.ticklabel_format(axis='x',style='sci',scilimits=(0,0),useMathText=True)
+
+        
+        #locatormax = interval=10)
+        #locatormin = interval=1)
+        ax.xaxis.set_minor_locator(AutoMinorLocator(5))
+        ax.xaxis.set_major_locator(MultipleLocator(limu[2]))
+
+
+        ax=label_plots(ax,leg_locu,explabel1u,explabel2u,tama)
+
+        label="%s_%s"%(name,hour)
+
+        plt.savefig('%s/tke_buget_%sh.pdf'%(pars.out_fig,label),bbox_inches='tight',dpi=200, format='pdf')
+
+        k+=1
+
+    if show:
+
+        plt.show()
+
+    plt.close('all')
+
+    return 
 
 def diurnal_hours_exps_sam_xr(exp,variables,date,name=[],explabel1=[],explabel2=[],alt=[],lim=[],var_to=[],color=[],leg_loc=[],diurnal=[],show=[]): 
 
@@ -197,6 +279,18 @@ def diurnal_hours_sam_xr(ex,variables,date,name=[],explabel1=[],explabel2=[],alt
 
     return 
 
+def main_plot_hour(fig,ax,data,hour,z,alt,color,explabel):
+
+    #mean diurnal function 
+    meanvar,time_h = diurnal_main(data,z,hour,hour,ch=1)
+
+    plt.plot(meanvar[0,:] ,z[:]/1000.0,label='%s'%(explabel),color=color[0],linewidth=1.0,alpha=1.0,dashes=color[1])
+    #plt.plot(meanvar[0,:] ,z[:]/1000.0,color=color,linewidth=1.0,alpha=1.0,dashes=[1,0])
+
+
+
+    return fig,ax
+
 
 def main_plot_diurnal_new(data,ch,hours,date,z,alt,lim,color,name,explabel,leg_loc,diurnal):
 
@@ -212,8 +306,9 @@ def main_plot_diurnal_new(data,ch,hours,date,z,alt,lim,color,name,explabel,leg_l
 
     size_wg = leg_loc[5][0]
     size_hf = leg_loc[5][1]
+    cm_plus = leg_loc[5][2]
 
-    pp.plotsize(size_wg,size_hf, 0.0,'diurnal')
+    tama=pp.plotsize(size_wg,size_hf,cm_plus,'diurnal')
 
     #To plot 
     fig  = plt.figure()
@@ -258,10 +353,18 @@ def main_plot_diurnal_new(data,ch,hours,date,z,alt,lim,color,name,explabel,leg_l
 
     fn,ax=shade_plot(fig,ax,data[:,:].values,z[:]/1000.0,color,label)
 
-    plt.axis([lim[0],lim[1],alt[0],alt[1]])
+    ax=label_plots(ax,leg_loc,explabel[0],explabel[1],tama)
 
+
+    if lim:
+
+        #plt.axis([lim[0],lim[1],alt[0],alt[1]])
+        ax.set_xlim(lim[0],lim[1])
+        ax.xaxis.set_major_locator(MultipleLocator(lim[2]))
+
+    ax.set_ylim(alt[0],alt[1])
     #def label_plots(ax,legend,explabel,xlabel): 
-    ax=label_plots(ax,leg_loc,explabel[0],explabel[1])
+    ax.xaxis.set_minor_locator(AutoMinorLocator(3))
 
     label="%s"%(name)
 
@@ -282,7 +385,7 @@ def shade_plot(fig,ax,data,z,cor,label):
     #cis =   (est - sd, est + sd)
     #cis =   (est*0.90, est*1.10)
 
-    ax.fill_betweenx(z,cis[0],cis[1],alpha=0.3,color=cor)# **kw)
+    ax.fill_betweenx(z,cis[0],cis[1],alpha=0.2,color=cor)# **kw)
 
 
     if label[1]:

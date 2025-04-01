@@ -67,17 +67,18 @@ def parameters(name,figsize):
         tama=9
     
         parame = {
-              'figure.figsize'  : figsize,
+              'figure.figsize'   : figsize,
               'font.family'     : 'serif',
               'font.sans-serif' : 'Helvetica',
-              'font.size'       : 8,
-              'font.weight'     : '400',
-              'lines.linewidth' : 1,
-              'legend.fontsize' : 'small',
-              'axes.labelsize'  : 'small',
-              'axes.labelweight': '300',
-              'xtick.labelsize' : 'small',
-              'ytick.labelsize' : 'small',
+              'font.weight'     :   tama,
+              'font.size'        :  tama,
+              'lines.linewidth'  :  1,
+              'legend.fontsize'  :  tama-1,
+              'axes.labelsize'   :  tama,
+              'axes.labelweight' :  tama,
+              #size of the numbers
+              'xtick.labelsize'  :  tama,
+              'ytick.labelsize'  :  tama,
               'xtick.direction' : 'out',   
         }
 
