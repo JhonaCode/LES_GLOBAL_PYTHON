@@ -150,8 +150,8 @@ def two_dimensional_exps_sam_xr(exp,variables,date,name=[],explabel1=[],explabel
 
             hours=[datei,datef]
 
-            contour,alt,var_to,color,exl1,exl2,leg_loc,show=df.default_values_sam_2d_kj(ex,var,z,contour,alt,var_to,color,explabel1,explabel2,leg_loc,show,k,j)
-
+            contour,alt,var_to,color,exl1,exl2,leg_locu,show=df.default_values_sam_2d_kj(ex,var,z,contour,alt,var_to,color,explabel1,explabel2,leg_loc,show,k,j)
+            
 
             data=tovar[var][:,:]*var_to[j]
 
@@ -159,7 +159,15 @@ def two_dimensional_exps_sam_xr(exp,variables,date,name=[],explabel1=[],explabel
             fig_label='les_'+name+'_'+var
 
 
-            figs,axis  = fown.d2_plot_im_diff(data,z,alt[j],contour[j],color[j],[fig_label,exl1,exl2],leg_loc[j],hours=hours)
+            figs,axis  = fown.d2_plot_im_diff(data,z,alt[j],contour[j],color[j],[fig_label,exl1,exl2],leg_locu,hours=hours)
+
+            #plot_cloud countour
+
+            if(leg_locu[5]):
+
+                figs,axis=fown.base_top_cloud(figs,axis,ex)
+
+                plt.savefig('%s/vertical_2d_%s.pdf'%(pars.out_fig,fig_label),bbox_inches='tight',dpi=200, format='pdf')
 
 
             j+=1
@@ -220,11 +228,11 @@ def two_dimensional_diff_xr(exp,variables,date,name=[],explabel1=[],explabel2=[]
 
             figs,axis  = fown.d2_plot_im_diff(data,z,alt[j],contour[j],color[j],[fig_label,exl1,exl2],leg_loc[j],hours=hours)
 
-            #plot_bar
-            #if(axis_on[3]):
-            figs,axis=fown.base_top_cloud(figs,axis,ex[0])
+            if(leg_locu[5]):
 
-            plt.savefig('%s/vertical_2d_%s.pdf'%(pars.out_fig,fig_label),bbox_inches='tight',dpi=200, format='pdf')
+                figs,axis=fown.base_top_cloud(figs,axis,ex[0])
+
+                plt.savefig('%s/vertical_2d_%s.pdf'%(pars.out_fig,fig_label),bbox_inches='tight',dpi=200, format='pdf')
 
 
             j+=1

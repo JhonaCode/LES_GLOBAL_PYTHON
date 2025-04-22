@@ -322,16 +322,21 @@ def default_values_sam_2d_kj(ex,vname,z,lim,alt,var_to,color,explabel1,explabel2
         exl1=explabel1[k][j]
 
     if not explabel2:
-        exl2=''
+        exl2=[]
     else: 
-        exl2=explabel2[k][j]
+        if k==-1:
+            exl2=explabel2[j]
+        else:
+            exl2=explabel2[k][j]
 
+    if not leg_loc:
 
-    ll1=[(maxv-minv)/4.0+minv,maxh*0.90]
-    #legent loc
-    l1         = (ll1,ll1,['vertical',True,'[%s]'%ex[vname].units],['%s'%vname,True],['z',True],[1,1])
+        ll1=[(maxv-minv)/4.0+minv,maxh*0.90]
+        #legent loc
+        l1         = (ll1,ll1,['vertical',True,'[%s]'%ex[vname].units],['%s'%vname,True],['z',True],[False],[1,1])
 
-    leg_loc.append(l1)
+    else:
+        leg_loc=leg_loc[k][j]
 
     if not show:
         show='True'
@@ -378,7 +383,7 @@ def default_values_sam_2d(ex,vname,z,lim,alt,var_to,color,explabel1,explabel2,le
 
 
 ##################################
-def default_values_sam_diurnal(ex,vname,z,lim,alt,var_to,color,explabel1,explabel2,leg_loc,diurnal,show,k,j): 
+def default_values_sam_diurnal(ex,vname,z,lim,alt,var_to,color,explabel1,explabel2,leg_loc,diurnal,show,k,j,line=[]): 
 
     name    =   str(ex.name.values)#+'_'+dates[0]
 
@@ -407,8 +412,13 @@ def default_values_sam_diurnal(ex,vname,z,lim,alt,var_to,color,explabel1,explabe
     if not color:
         color='Red'
     else:
+        #if k==-1:
         color=color[j]
 
+    if not line:
+        line=[1,0]
+    else:
+        line=line[j]
 
     if not explabel1:
         explabel1=''
@@ -435,7 +445,10 @@ def default_values_sam_diurnal(ex,vname,z,lim,alt,var_to,color,explabel1,explabe
 
         leg_loc=l1
     else:
-        leg_loc=leg_loc[k][j]
+        if k==-1:
+            leg_loc=leg_loc[j]
+        else:
+            leg_loc=leg_loc[k][j]
 
     if not diurnal:
         diurnal=[1,'True',[]]
@@ -447,7 +460,18 @@ def default_values_sam_diurnal(ex,vname,z,lim,alt,var_to,color,explabel1,explabe
     else:
         show=show
 
-    return lim,alt,var_to,color,explabel1,explabel2,leg_loc,diurnal,show
+    return lim,alt,var_to,color,explabel1,explabel2,leg_loc,diurnal,show,line
+
+def default_plot_diurnal(leg_loc,j): 
+
+    if not leg_loc:
+        l1         = [1,1,0]
+        leg_loc=l1
+    else:
+        leg_loc=leg_loc[j][5]
+
+
+    return leg_loc
 
 ##################################
 def default_values_mpas(ex,var,vname,z,lim,alt,var_to,color,explabel1,explabel2,leg_loc,diurnal,show): 

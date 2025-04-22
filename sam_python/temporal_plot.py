@@ -115,14 +115,15 @@ def temporal_plot_exp_var_xr(exp,date=[],variables=[],var_to=[],explabel1=[],day
     
             tovar= ex.sel(time=slice(ex.time[ni],ex.time[nf-1]))
 
-            time11   =   tovar.ltime[ni:nf]
+            time11   =   tovar.time
 
             time22=down.data_to_reference_vector(time11,1,1,2025)
     
             data=tovar[var]*var_tou
 
-            ax.grid(axis='y',linewidth=1.0,alpha=0.5,dashes=[1,1,0,0] )
-            ax.grid(axis='x',linewidth=1.0,alpha=0.5,dashes=[1,1,0,0] )
+            ax.grid(axis='y',linewidth=1.0,alpha=0.7,dashes=[1,1,0,0] )
+            ax.grid(axis='x',linewidth=1.0,alpha=0.7,dashes=[1,1,0,0] )
+
             plt.plot(time22,data,label='%s'%(explabel1u),color=coloru,linewidth=1.0,alpha=1.0)
 
             k+=1

@@ -225,7 +225,8 @@ def plot2d_im_diff(ex1,ex2,variables,days=[],alt=[],color=[],explabel1=[],explab
 
         #ax.yaxis.set_major_locator(plt.MultipleLocator(0.5))
 
-        ax.grid(axis='y',linewidth=1.0,alpha=0.5,dashes=[1,1,0,0] )
+        ax.grid(axis='y',linewidth=0.5,alpha=0.5,dashes=[1,1,0,0] )
+        ax.grid(axis='x',linewidth=0.5,alpha=0.5,dashes=[1,1,0,0] )
 
 
         if(axis_on[j][1]):

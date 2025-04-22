@@ -55,7 +55,9 @@ def label_plots(ax,legend,explabel1,explabel2,tama):
 
         ax.text(legend[1][0], legend[1][1], r' %s'%(explabel2), fontsize=tama, color='black')
 
-    plt.grid(color = 'gray', linestyle = '--', linewidth = 0.25)
+    #plt.grid(color = 'gray', linestyle = '--', linewidth = 0.25)
+    plt.grid(color = 'gray',axis='y',linewidth=0.5,alpha=0.5,dashes=[1,1,0,0])
+    plt.grid(color = 'gray',axis='x',linewidth=0.5,alpha=0.5,dashes=[1,1,0,0])
 
     if( legend[3][1]==True):
         plt.xlabel(r'%s'%(xlabel)) 
@@ -99,7 +101,7 @@ def diurnal_tke_budget_xr(exp,hour,date,name=[],explabel1=[],explabel2=[],alt=[]
         #Its no necessary to calculate de height
         z=ex.z.values
 
-        limu,altu,var_tou,coloru,explabel1u,explabel2u,leg_locu,diurnalu,showu=df.default_values_sam_diurnal(ex,'BUOYA',z,lim,alt,var_to,color,explabel1,explabel2,leg_loc,diurnal,show,-1,k)
+        limu,altu,var_tou,coloru,explabel1u,explabel2u,leg_locu,diurnalu,showu,lineu=df.default_values_sam_diurnal(ex,'BUOYA',z,lim,alt,var_to,color,explabel1,explabel2,leg_loc,diurnal,show,-1,k)
 
         #data1 = tovar[var][:,:]*var_tou
         data2 = tovar['SHEAR'][:]*var_tou   #+ex.SHEARS[:]
@@ -119,9 +121,8 @@ def diurnal_tke_budget_xr(exp,hour,date,name=[],explabel1=[],explabel2=[],alt=[]
 
         figs,ax = main_plot_hour(fig,ax,data2,hour,z,altu,['blue',[1,0]]        , 'S' )
         figs,ax = main_plot_hour(fig,ax,data3,hour,z,altu,['red' ,[1,1]]        , 'B' )
-        #figs,ax = main_plot_hour(fig,ax,data4,hour,z,altu,['magenta',[2,1,2,1] ], 'P' )
-        figs,ax = main_plot_hour(fig,ax,data4,hour,z,altu,['magenta',[1,0] ], 'P' )
-        figs,ax = main_plot_hour(fig,ax,data5,hour,z,altu,['cyan',[2,1]      ]  , 'T' )
+        figs,ax = main_plot_hour(fig,ax,data4,hour,z,altu,['cyan',[1,0]      ]  , 'T' )
+        figs,ax = main_plot_hour(fig,ax,data5,hour,z,altu,['magenta',[2,1] ], 'P' )
         figs,ax = main_plot_hour(fig,ax,data6,hour,z,altu,['green',[1,0]     ]  , 'D' )
 
         plt.axis([limu[0],limu[1],altu[0],altu[1]])
@@ -142,6 +143,97 @@ def diurnal_tke_budget_xr(exp,hour,date,name=[],explabel1=[],explabel2=[],alt=[]
         plt.savefig('%s/tke_buget_%sh.pdf'%(pars.out_fig,label),bbox_inches='tight',dpi=200, format='pdf')
 
         k+=1
+
+    if show:
+
+        plt.show()
+
+    plt.close('all')
+
+    return 
+
+
+def diurnal_var_sam_xr(exp,variables,date,name=[],explabel1=[],explabel2=[],explabel3=[],alt=[],lim=[],var_to=[],color=[],line=[],leg_loc=[],diurnal=[],show=[]): 
+
+    j=0
+    for var in variables:
+    
+        print("___________________")
+        print("%s"%(var))
+        print("___________________")
+
+
+        plot_defu=df.default_plot_diurnal(leg_loc,j)
+
+        size_wg = plot_defu[0]
+        size_hf = plot_defu[1]
+        cmm     = plot_defu[2]
+
+        tama=pp.plotsize(size_wg,size_hf,cmm,'diurnal')
+
+        #To plot 
+        fig  = plt.figure()
+        ax   = plt.axes()
+
+
+        limu,altu,var_tou,coloru,explabel1u,explabel3u,leg_locu,diurnalu,showu,lineu=df.default_values_sam_diurnal(exp[0],var,exp[0].z,lim,alt,var_to,color,explabel1,explabel3,leg_loc,diurnal,show,-1,j,line)
+
+
+        name='%s_hr_%s'%(diurnal[j][2][0],var)
+
+        k=0
+        for ex in exp:
+
+            print("___________________")
+            print("__%s__"%(ex.name))
+            print("___________________")
+
+            #date_format = '%Y%m%d%H%M%S'
+            date_format = '%Y-%m-%dT%H'
+            datei=dt.datetime.strptime(date[k][0], date_format)
+            datef=dt.datetime.strptime(date[k][1], date_format)
+
+            time1 = np.datetime64(date[k][0]) 
+            time2 = np.datetime64(date[k][1])
+
+            ni,nf=down.data_n(time1,time2,ex.time.values) 
+            #ni,nf=down.data_n(datei,datef,ex.time.values) 
+
+            tovar= ex.sel(time=slice(ex.time[ni],ex.time[nf]))
+
+            #if name:
+            name    =   name+'_'+str(ex.name.values)#+'_'+dates[0]
+
+            #Its no necessary to calculate de height
+            z=ex.z.values
+
+            data=tovar[var][:,:]*var_tou
+
+            hours=[datei,datef]
+
+            
+            #lines per hour
+            ch=diurnalu[0]
+
+            try:
+                #hour to plot
+                htp=diurnalu[2]
+            except:
+                htp=[]
+
+            fig,ax = main_plot_var(fig,ax,data,ch,htp,hours,z,altu,limu,coloru[k],lineu[k],name,explabel2[k],leg_locu,diurnalu[1])
+
+
+            k+=1
+
+        ax=label_plots(ax,leg_locu,explabel1u,explabel3u,tama)
+
+        plt.savefig('%s/diurnal_%s.pdf'%(pars.out_fig,name),bbox_inches='tight',dpi=200, format='pdf')
+
+
+        plt.show()
+
+        j+=1
 
     if show:
 
@@ -291,6 +383,52 @@ def main_plot_hour(fig,ax,data,hour,z,alt,color,explabel):
 
     return fig,ax
 
+def main_plot_var(fig,ax,data,ch,hours,date,z,alt,lim,color,line,name,explabel,leg_loc,diurnal):
+
+    hi=date[0].hour
+    hf=date[1].hour
+
+    #ni,nf= down.data_n(ex.datei_diurnal,ex.datef_diurnal,ex.date[:])
+    ##interval hour
+    ch      = ch
+
+    #mean diurnal function 
+    meanvar,hour = diurnal_main(data,z,hi,hf,ch=1)
+
+    jj=0
+
+    if diurnal:
+         
+        if hours:
+
+            for j in range(0,len(hour)):                                
+                
+                for jj in range(0,len(hours)):                          
+                    
+                    if hour[j]==hours[jj]:
+            
+                        plt.plot(meanvar[j,:] ,z[:]/1000.0,label=r'%s'%(explabel),color=color,linewidth=1.0,alpha=1.0,dashes=line)
+
+        else:
+                
+            j=0
+            for h in range(0,hf-hi,ch):
+            
+                plt.plot(meanvar[j,:] ,z[:]/1000.0,label=r'%s'%(explabel),color=color,linewidth=1.0,alpha=1.0,dashes=line)
+                j+=1
+
+    if lim:
+
+        #plt.axis([lim[0],lim[1],alt[0],alt[1]])
+        ax.set_xlim(lim[0],lim[1])
+        ax.xaxis.set_major_locator(MultipleLocator(lim[2]))
+
+    ax.set_ylim(alt[0],alt[1])
+    #def label_plots(ax,legend,explabel,xlabel): 
+    ax.xaxis.set_minor_locator(AutoMinorLocator(3))
+
+
+    return fig,ax
 
 def main_plot_diurnal_new(data,ch,hours,date,z,alt,lim,color,name,explabel,leg_loc,diurnal):
 

@@ -12,143 +12,189 @@ import pandas as pd
 
 import uxarray as ux
 
+import numpy as np
+
 import sources.data_own  as dn
 
+#parallel
+import concurrent.futures
+import logging
+import threading
+import time
+import queue
 
-def generate_data(dis,dfs,nhpull):
+"""
+def producer(queue, event,database,npp):
 
-    #2014020100
-    date_format = '%Y%m%d%H%M'
+    while not event.is_set():
 
-    #to add the minutes to the original date
-    dis=dis+'00'
-    dfs=dfs+'00'
+        #message = random.randint(1, 101)
+        for k in range(0,npp):
+
+            executor.submit(database.update, k,database.range)
+
+        logging.info("Producer got message: %s", message)
+        queue.put(message)
+
+    logging.info("Producer received event. Exiting")
+
+def consumer(queue, event):
+    """Pretend we're saving a number in the database."""
+    while not event.is_set() or not queue.empty():
+        message = queue.get()
+        logging.info(
+            "Consumer storing message: %s (size=%d)", message, queue.qsize()
+        )
+
+    logging.info("Consumer received event. Exiting")
+
+
+def concatenate_month_queue(date,grid,path,header,name,UTC=0,npp=6):
+    format = "%(asctime)s: %(message)s"
+    logging.basicConfig(format=format, level=logging.INFO,
+                        datefmt="%H:%M:%S")
+
+    database = load_dataset(date,path,grid,header,npp,name,UTC)
+
+    pipeline = queue.Queue(maxsize=10)
+
+    event = threading.Event()
+
+    with concurrent.futures.ThreadPoolExecutor(max_workers=npp) as executor:
+        for k in range(0,npp):
+
+            executor.submit(producer,pipeline,event,database)
+            executor.submit(consumer,pipeline,event,database)
+
+            logging.info("Main: about to set event")
+            event.set()
+
+    return database.dataset
+"""
+
+
+def concatenate_month_parallel(date,grid,path,header,name,UTC=0,npp=6):
+    format = "%(asctime)s: %(message)s"
+    logging.basicConfig(format=format, level=logging.INFO,
+                        datefmt="%H:%M:%S")
+
+    database = load_dataset(date,path,grid,header,npp,name,UTC)
+
+    #logging.info("Testing update. Starting value is %d.", database.dataset)
+    with concurrent.futures.ThreadPoolExecutor(max_workers=npp) as executor:
+        for k in range(0,npp):
+
+            executor.submit(database.update, k,database.range)
+    #logging.info("Testing update. Ending value is %d.", database.dataset)
+
+    print(database.dataset)
+
+    return database.dataset
+
+class load_dataset:
+
+    def __init__(self,date,path,grid,header,npp,name,UTC):
+
+        self.dataset  = []
+        self._lock    = threading.Lock()
+        self.path0    = path[0] 
+        self.path1    = path[1] 
+        self.grid     = grid 
+        self.header1  = header[0]
+        self.header2  = header[1]
+        self.name     = name 
+        self.UTC      = UTC 
+
+        datei=date[0]
+        datef=date[1]
+        hours_step=24
+        self.dates=dn.gerate_data(datei,datef,hours_step,'%Y%m%d%H')
+        self.nd=len(self.dates)
+        self.ndays=int(self.nd/(npp))
+        self.hours_step=1
+        self.range=dates_range(npp,self.nd,self.ndays)
+
+        print(self.range,'range')
+        #print(self.name)
+
+    def update(self, name,drange):
+
+        logging.info("Thread %s: starting update", name)
+        logging.debug("Thread %s about to lock", name)
+
+        #print(name,ni,ndays) print('name,ni,ndays')
+
+        with self._lock:
+
+            logging.debug("Thread %s has lock", name)
+
+            nc_files=[]
+
+            for i in drange[name]: 
+
+                print(self.dates[i])
+
+                diag=dn.gerate_data_mpas(self.dates[i],self.dates[i+1],self.hours_step)
+
+                for diagi in diag:
+                    nc=self.path0+'/%s_%s_%s/'%(self.header1,self.dates[i],self.dates[i+1])+self.path1+'/%s'%(self.header2)+diagi+'.nc'
+                    nc_files.append(nc)
+
+        mm=ux.open_mfdataset(self.grid,nc_files,combine='nested', concat_dim='Time',parallel=False,engine='netcdf4')
+
+        mm['name']   = self.name
+
+        mm['netshsf']=mm['acswdnb']-mm['acswupb']
+
+        mm['netlwsf']=mm['aclwdnb']-mm['aclwupb']
+
+        mm['netsf']  =mm['netshsf']-mm['netlwsf']
+
+
+        ltime=pd.to_datetime(mm.Time)+dt.timedelta(hours=self.UTC)
+        ###########################################
+
+        mm['netsf_dw']=mm['acswdnb']-mm['aclwdnb']
+
+        mm['Time']=ltime
+
+        self.dataset.append(mm)
+
+        logging.debug("Thread %s about to release lock", name)
+        logging.debug("Thread %s after release", name)
+        logging.info("Thread %s: finishing update", name)
+
+def dates_range(npp,nd,ndays):
     
-    di=dt.datetime.strptime(dis, date_format)
-    df=dt.datetime.strptime(dfs, date_format)
 
-    d =df-di
+    ni=0
+    y=[]
+    for k in range(npp):
+
+        x=[]
+
+        if(k+1==npp):
+            lims=nd
+        else:
+            lims=ndays*(k+1)
+        for i in  range(ni,lims): 
+
+            x.append(i)
+
+            ni+=1
+        y.append(x)
+
+    return y
     
-    nd      =d.days
-    month   =di.month
-    year    =di.year
 
-    #2014-09-01T20:00:
-    date_format_out = '%Y-%m-%dT%H:%M'##+':00.00000000'
-    
-    nh =int(d.total_seconds()//(3600))
+        
 
-    deltat=dt.timedelta(hours=int(nhpull))
-    
-    days=di
-
-    #To acumulated 
-    ncfiles=[]
-    
-    for i in range(0,int(nh)+1,nhpull):   #+1 for the last day 
-    
-        ncfile=days.strftime(date_format_out)
-        ncfiles.append(ncfile)
-        days=days+deltat
-
-    return ncfiles 
-
-def gerate_data(dis,dfs,nhpull,formatdate):
-
-    date_format = '%Y%m%d%H%M'
-
-    dis=dis
-    dfs=dfs
-    
-    di=dt.datetime.strptime(dis, date_format)
-    df=dt.datetime.strptime(dfs, date_format)
-
-    d =df-di
-    
-    nd      =d.days
-    month   =di.month
-    year    =di.year
-
-    date_format_mpas = formatdate 
-    
-    nh =int(d.total_seconds()//(3600))
-
-    deltat=dt.timedelta(hours=int(nhpull))
-    
-    days=di
-
-    #To acumulated 
-    ncfiles=[]
-    ncdatas=[]
-    
-    for i in range(0,int(nh)+1,nhpull):   #+1 for the last day 
-    
-        ncfile=days.strftime(date_format_mpas)
-    
-        ncfiles.append(ncfile)
-
-        ncdatas.append(days)
-    
-        days=days+deltat
-
-
-    return ncfiles 
-
-def gerate_data_mpas(dis,dfs,nhpull):
-
-    #2014-02-01T00:00
-    #date_format = '%Y-%m-%dT%H:%M'##+':00.00000000'
-
-    #2014020100
-    date_format = '%Y%m%d%H%M'
-    #date_format = '%Y-%m-%dT%H:%M'##+':00.00000000'
-
-    #to add the minutes to the original date
-    dis=dis+'00'
-    dfs=dfs+'00'
-    
-    di=dt.datetime.strptime(dis, date_format)
-    df=dt.datetime.strptime(dfs, date_format)
-
-    d =df-di
-    
-    nd      =d.days
-    month   =di.month
-    year    =di.year
-
-    date_format_mpas = '%Y-%m-%d_%H.%M'+'.00'
-    #default='%s/diag.2014-09-02_03.00.00.nc'%path,
-    
-    nh =int(d.total_seconds()//(3600))
-
-    deltat=dt.timedelta(hours=int(nhpull))
-    
-    days=di
-
-    #To acumulated 
-    ncfiles=[]
-    ncdatas=[]
-    
-    for i in range(0,int(nh)+1,nhpull):   #+1 for the last day 
-    
-        ncfile=days.strftime(date_format_mpas)
-    
-        ncfiles.append(ncfile)
-
-        ncdatas.append(days)
-    
-        days=days+deltat
-
-
-    return ncfiles 
-
-def concatenate_month(date,grid,path,header,name,UTC=0,np=4):
+def concatenate_month_parallellll(date,grid,path,header,name,UTC=0,np=4):
 
     datei=date[0]
     datef=date[1]
     hours_step=24
     dates=dn.gerate_data(datei,datef,hours_step,'%Y%m%d%H')
-
 
     #number of proces
     #np
@@ -164,14 +210,12 @@ def concatenate_month(date,grid,path,header,name,UTC=0,np=4):
     for k in range(0,np):
 
         nc_files=[]
-
         #print(ni,ndays+ni)
         #print('pppp')
 
         for i in  range(ni,ndays+ni): 
 
-
-            #print(dates[i])
+            print(dates[i])
             diag=dn.gerate_data_mpas(dates[i],dates[i+1],hours_step)
     
             if(k==0):
@@ -204,13 +248,14 @@ def concatenate_month(date,grid,path,header,name,UTC=0,np=4):
         xx.append(mm)
 
     #the rest of process, does not make with the process
-    #print('xxx')
+
     for i in  range(ni,nd-1): 
 
-        #print(dates[i])
         diag=dn.gerate_data_mpas(dates[i],dates[i+1],hours_step)
 
-        nc_files.append(path[0]+'/%s_%s_%s/'%(header[0],dates[i],dates[i+1])+path[1]+'/%s'%(header[1])+diag[j]+'.nc')
+        for j in range(1,len(diag)): 
+
+            nc_files.append(path[0]+'/%s_%s_%s/'%(header[0],dates[i],dates[i+1])+path[1]+'/%s'%(header[1])+diag[j]+'.nc')
 
         mm=ux.open_mfdataset(grid,nc_files,combine='nested', concat_dim='Time',parallel=True,engine='netcdf4')
 
@@ -232,18 +277,130 @@ def concatenate_month(date,grid,path,header,name,UTC=0,np=4):
 
         xx.append(mm)
 
+    return xx
+
+def concatenate_month(date,grid,path,header,name,UTC=0,np=4):
+
+    datei=date[0]
+    datef=date[1]
+    hours_step=24
+    dates=dn.gerate_data(datei,datef,hours_step,'%Y%m%d%H')
 
 
-    #print(xx[0].Time)
-    #print(xx[1].Time)
-    #print(xx[2].Time)
+    #number of proces
+    #np
+
+    nd=len(dates)
+    ndays=int(nd/(np))
+
+    hours_step=1
+
+    #to parallel
+    xx=[]
+    ni=0
+    for k in range(0,np):
+
+        nc_files=[]
+        #print(ni,ndays+ni)
+        #print('pppp')
+
+        for i in  range(ni,ndays+ni): 
+
+            print(dates[i])
+            diag=dn.gerate_data_mpas(dates[i],dates[i+1],hours_step)
+    
+            if(k==0):
+                nc_files.append(path[0]+'/%s_%s_%s/'%(header[0],dates[i],dates[i+1])+path[1]+'/%s'%(header[1])+diag[0]+'.nc')
+    
+            for j in range(1,len(diag)): 
+    
+                nc_files.append(path[0]+'/%s_%s_%s/'%(header[0],dates[i],dates[i+1])+path[1]+'/%s'%(header[1])+diag[j]+'.nc')
+    
+            ni+=1
+        
+        mm=ux.open_mfdataset(grid,nc_files,combine='nested', concat_dim='Time',parallel=True,engine='netcdf4')
+
+        mm['name']   = name
+
+        mm['netshsf']=mm['acswdnb']-mm['acswupb']
+
+        mm['netlwsf']=mm['aclwdnb']-mm['aclwupb']
+
+        mm['netsf']  =mm['netshsf']-mm['netlwsf']
+
+
+        ltime=pd.to_datetime(mm.Time)+dt.timedelta(hours=UTC)
+        ###########################################
+
+        mm['netsf_dw']=mm['acswdnb']-mm['aclwdnb']
+
+        mm['Time']=ltime
+
+        xx.append(mm)
+
+    #the rest of process, does not make with the process
+
+    for i in  range(ni,nd-1): 
+
+        diag=dn.gerate_data_mpas(dates[i],dates[i+1],hours_step)
+
+        for j in range(1,len(diag)): 
+
+            nc_files.append(path[0]+'/%s_%s_%s/'%(header[0],dates[i],dates[i+1])+path[1]+'/%s'%(header[1])+diag[j]+'.nc')
+
+        mm=ux.open_mfdataset(grid,nc_files,combine='nested', concat_dim='Time',parallel=True,engine='netcdf4')
+
+        mm['name']   = name
+
+        mm['netshsf']=mm['acswdnb']-mm['acswupb']
+
+        mm['netlwsf']=mm['aclwdnb']-mm['aclwupb']
+
+        mm['netsf']  =mm['netshsf']-mm['netlwsf']
+
+
+        ltime=pd.to_datetime(mm.Time)+dt.timedelta(hours=UTC)
+        ###########################################
+
+        mm['netsf_dw']=mm['acswdnb']-mm['aclwdnb']
+
+        mm['Time']=ltime
+
+        xx.append(mm)
 
     return xx
+
+def open_uxr(grid,ncfiles,path,header,name,UTC=0):
+
+    nc_files=[path +'/%s'%(header)+ d +'.nc' for d in ncfiles] 
+    mm=ux.open_mfdataset(grid,nc_files,combine='nested', concat_dim='Time',parallel=True)
+
+    exit()
+
+    ltime=pd.to_datetime(mm.Time)+dt.timedelta(hours=UTC)
+
+
+    mm['name']=name
+
+    mm['netshsf']=mm['acswdnb']-mm['acswupb']
+
+    mm['netlwsf']=mm['aclwdnb']-mm['aclwupb']
+
+    mm['netsf']  =mm['netshsf']-mm['netlwsf']
+
+    ##########################################
+
+    mm['netsf_dw']=mm['acswdnb']-mm['aclwdnb']
+
+    mm['Time']=ltime
+
+
+    return mm
 
 def concatenate_uxr(grid,ncfiles,path,header,name,UTC=0):
 
     nc_files=[path +'/%s'%(header)+ d +'.nc' for d in ncfiles] 
-    #mm=ux.open_mfdataset(grid,nc_files,combine='nested', concat_dim='time')
+    #mm=ux.open_mfdataset(grid,nc_files,combine='nested', concat_dim='Time')
     mm=ux.open_mfdataset(grid,nc_files,combine='nested', concat_dim='Time',parallel=True)
 
     ltime=pd.to_datetime(mm.Time)+dt.timedelta(hours=UTC)
@@ -367,6 +524,8 @@ def data_day(data,time):
 
     return index
 	
+
+
 	
 	
 

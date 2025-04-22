@@ -167,7 +167,7 @@ def diurnal_entrainment_xr(exp,variables,date,name=[],explabel1=[],explabel2=[],
         j=0
         for var in variables:
 
-            limu,altu,var_tou,coloru,explabel1u,explabel2u,leg_locu,diurnalu,showu=df.default_values_sam_diurnal(ED,var,z,lim,alt,var_to,color,explabel1,explabel2,leg_loc,diurnal,show,k,j)
+            limu,altu,var_tou,coloru,explabel1u,explabel2u,leg_locu,diurnalu,showu,lineu=df.default_values_sam_diurnal(ED,var,z,lim,alt,var_to,color,explabel1,explabel2,leg_loc,diurnal,show,k,j)
 
             print("___________________")
             print("%s"%(var))

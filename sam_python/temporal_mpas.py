@@ -206,12 +206,13 @@ def temporal_ex_hours_mpas_ux(exp,di,df,variables,exp2,variables2=[],exp3=[],var
 
         fig.savefig('%s/temporal_%s.pdf'%(pars.out_fig,label),bbox_inches='tight',dpi=200, format='pdf')
 
-        if show[j]=='True':
-            plt.show()
 
         plt.close()
 
         j+=1
+
+    if show[0]=='True':
+        plt.show()
 
     return 
 
@@ -492,12 +493,14 @@ def diurnal_cycle_mpas_parallel(exp,di,df,variables,exp2=[],variables2=[],exp3=[
 
         fig.savefig('%s/diurnal_cicle_%s.pdf'%(pars.out_fig,label),bbox_inches='tight',dpi=200, format='pdf')
 
-        if show[j]=='True':
-            plt.show()
 
         plt.close()
 
         j+=1
+
+    if show[0]=='True':
+
+        plt.show()
 
     return 
 

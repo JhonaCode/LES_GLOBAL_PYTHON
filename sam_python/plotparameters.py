@@ -132,20 +132,34 @@ def parameters(name,figsize):
     
     if name=='temporal':
 
-        tama=9
+        #tama=9
+        #parame= {
+        #     	  'figure.figsize':figsize,
+        #    	  'font.family' : 'serif',
+        #    	  'font.sans-serif'    : 'Helvetica',
+        #          'font.size' : 8,
+        #    	  'font.weight' : '400',
+        #    	  'lines.linewidth':1.0,
+        #     	  'legend.fontsize': 'small',
+        #     	  'axes.labelsize' : 'small',
+        #     	  'axes.labelweight' :'400',
+        #     	  'xtick.labelsize': 'small',
+        #     	  'ytick.labelsize': 'small',
+        #          'xtick.direction': 'out',   
+        tama=8
         parame= {
              	  'figure.figsize':figsize,
             	  'font.family' : 'serif',
             	  'font.sans-serif'    : 'Helvetica',
-                  'font.size' : 8,
+                  'font.size' : tama,
             	  'font.weight' : '400',
             	  'lines.linewidth':1.0,
-             	  'legend.fontsize': 'small',
-             	  'axes.labelsize' : 'small',
-             	  'axes.labelweight' :'400',
-             	  'xtick.labelsize': 'small',
-             	  'ytick.labelsize': 'small',
-                  'xtick.direction': 'out',   
+             	  'legend.fontsize': tama-2,
+             	  'axes.labelsize' : tama,
+             	  'axes.labelweight': tama,
+             	  'xtick.labelsize': tama,
+             	  'ytick.labelsize': tama,
+                  'xtick.direction': 'out',
         }
 
 

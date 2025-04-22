@@ -2,7 +2,7 @@ import  os,sys
 import cartopy.crs as ccrs
 MODEL='MPAS'
 
-plotdef='mapa1'
+plotdef='2d'
 #Latex width 
 wf=0.33
 hf=1.0

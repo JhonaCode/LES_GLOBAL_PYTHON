@@ -56,11 +56,11 @@ def d2_plot_im_diff(var,z,alt,contour,colors,explabel,leg_loc,hours=[]):
     #used user parameter to plot(plotparameter.py
     #mpl.rcParams.update(params_2d)
 
-    size_wg = leg_loc[5][0]
-    size_hf = leg_loc[5][1]
+    size_wg = leg_loc[6][0]
+    size_hf = leg_loc[6][1]
+    cmas    = leg_loc[6][2]
 
-    #print(pars.plotdef)
-    tama= pp.plotsize(size_wg,size_hf, 0.0,pars.plotdef)
+    tama= pp.plotsize(size_wg,size_hf, cmas,pars.plotdef)
 
 
     ################################3
@@ -104,7 +104,9 @@ def d2_plot_im_diff(var,z,alt,contour,colors,explabel,leg_loc,hours=[]):
     CU=plt.contourf(X,Y,MF.T,levels=levels,origin='lower',cmap=colors,extend='neither');
     #CU=ax.contourf(X,Y,Z,levels=levels,origin='lower',cmap=colors);
 
-    plt.grid(color = 'gray', linestyle = '--', linewidth = 0.25)
+    #plt.grid(color = 'gray', linestyle = '--', linewidth = 0.25)
+    #plt.grid(color = 'gray', linestyle = '--', linewidth = 0.25)
+    plt.grid(color = 'gray',linewidth=0.5,alpha=0.5,dashes=[1,1,0,0] )
 
     # Set all level lines to black
     #line_colors = ['black' for l in CU.levels]
@@ -139,9 +141,8 @@ def d2_plot_im_diff(var,z,alt,contour,colors,explabel,leg_loc,hours=[]):
 
             CB.set_ticks(cbarlabels[0::2])
 
-
-        #CB.set_ticks(cbarlabels[1::4])
-        CB.ax.set_title(r'%s'%leg_loc[2][2],size=tama)
+        #CB.set_ticks(cbarlabels[0::3])
+        CB.ax.set_title(r' %s'%leg_loc[2][2],size=tama-1)
 
 
     #plot_bar
@@ -340,34 +341,34 @@ def base_top_cloud(fig,ax,ex):
 
     ctopf = lfilter(b, a, ctop)
 
-    ax.plot( ex.time[ni2:nf2:step]     , cbasef[ni2:nf2:step] ,color='indigo' ,dashes=[2,1]  ,linewidth=1.0,alpha=1.0,marker='')
+    ax.plot( ex.time[ni2:nf2:step]     , cbasef[ni2:nf2:step] ,color='fuchsia' ,dashes=[1,0]  ,linewidth=1.0,alpha=1.0,marker='')
 
-    ax.plot( ex.time[ni2:nf2:step]     , pblhf[ni2:nf2:step]  ,color='black'     ,linewidth=2.0,alpha=1.0,marker='')
+    ax.plot( ex.time[ni2:nf2:step]     , pblhf[ni2:nf2:step]  ,color='navy'     ,linewidth=1.0,alpha=1.0,marker='')
 
-    ax.plot( ex.time[ni2:nf2:step]     , ctopf[ni2:nf2:step]  ,color='grey' ,  dashes=[2,1]  ,linewidth=1.0,alpha=1.0,marker='')
+    ax.plot( ex.time[ni2:nf2:step]     , ctopf[ni2:nf2:step]  ,color='black' ,  dashes=[1,0]  ,linewidth=1.0,alpha=1.0,marker='')
 
-    ax.plot( ex.time[ni2:nf2:step]     , cbase2[ni2:nf2:step]  ,color='red' ,  dashes=[2,1]  ,linewidth=1.0,alpha=1.0,marker='')
+    ax.plot( ex.time[ni2:nf2:step]     , cbase2[ni2:nf2:step]  ,color='lime' ,  dashes=[1,0]  ,linewidth=1.0,alpha=1.0,marker='')
 
 
     ytex,ytex2= down.data_n(time1,time2,ex.time[:].values)
 
-    text1   ='$\mathrm{h_{base}}$'
-    idtex1  = idf2-timedelta(hours=8, minutes=0)
-    ax.text(idtex1, pblhf[ytex]+0.2 , r' %s'%(text1), fontsize=7, color='red')
+    text1   ='$\mathrm{h_{b}}$'
+    idtex1  = idf2-timedelta(hours=2, minutes=30)
+    ax.text(idtex1, pblhf[ytex2]+0.2 , r' %s'%(text1), fontsize=7, color='fuchsia')
 
     text2='$\mathrm{Z_i}$'
     idtex1    = idf2-timedelta(hours=0, minutes=0)
-    ax.text(idtex1,pblhf[ytex2] -0.1 , r' %s'%(text2), fontsize=7, color='black')
+    ax.text(idtex1,pblhf[ytex2] -0.1 , r' %s'%(text2), fontsize=6, color='navy')
 
     text1='LFC'
     #text1='NCL'
     idtex2    = idf2-timedelta(hours=0, minutes=0)
-    ax.text(idtex2,cbasef[ytex2]+0.1 , r' %s'%(text1), fontsize=7, color='indigo')
+    ax.text(idtex2,cbasef[ytex2]+0.0 , r' %s'%(text1), fontsize=6, color='lime')
 
-    text3='$\mathrm{h_{top}}$'
+    text3='$\mathrm{h_{t}}$'
     #text3='$\mathrm{h_{topo}}$'
-    idtex3    = idf2-timedelta(hours=0, minutes=0)
-    ax.text(idtex3,ctopf[ytex2]-0.0 , r' %s'%(text3), fontsize=7, color='black')
+    idtex3    = idf2-timedelta(hours=0, minutes=00)
+    ax.text(idtex3,ctopf[ytex2]+0.2 , r' %s'%(text3), fontsize=7, color='black')
 
     #if ex.name=='m_w_l' or  ex.name=='large':
     #    ax.text(idtex3,ctopf[ytex2]-0.4 , r' %s'%(text3), fontsize=7, color='black')
@@ -385,7 +386,9 @@ def label_plots(time,ax,legend,explabel1,explabel2,tama):
 
     ax.text(time[legend[0][0]], legend[0][1], r' %s'%(explabel1), fontsize=tama, color='black')
 
-    ax.text(time[legend[0][0]], legend[0][1], r' %s'%(explabel2), fontsize=tama, color='black')
+    if  legend[1]:
+
+        ax.text(time[legend[1][0]], legend[1][1], r' %s'%(explabel2), fontsize=tama, color='black')
 
     if( legend[3][1]==True):
         plt.xlabel(r'%s'%(xlabel), fontsize=tama) 
