@@ -50,6 +50,7 @@ cmap3 = LinearSegmentedColormap.from_list('mycmap', ['white','silver','blue','gr
 cmap4 = LinearSegmentedColormap.from_list('mycmap', ['white','grey','lightblue','blue','green','yellow'], N=256, gamma=1.0)
 
 
+
 def d2_plot_im_diff(var,z,alt,contour,colors,explabel,leg_loc,hours=[]):
 
     #Data to plot 
@@ -163,14 +164,45 @@ def d2_plot_im_diff(var,z,alt,contour,colors,explabel,leg_loc,hours=[]):
     if hours:
         ax.set_xlim([hours[0],hours[1]])
 
+
     ax.set_ylim([alt[0],alt[1]])
-    ax.yaxis.set_major_locator(plt.MultipleLocator(1.0))
+    #ax.yaxis.set_major_locator(plt.MultipleLocator(1.0))
+    ax.yaxis.set_major_locator(plt.MultipleLocator(2.0))
 
     ax=label_plots(x,ax,leg_loc,explabel[1],explabel[2],tama)
 
-    plt.savefig('%s/vertical_2d_%s.pdf'%(pars.out_fig,explabel[0]),bbox_inches='tight',dpi=200, format='pdf')
+    #plt.savefig('%s/vertical_2d_%s.pdf'%(pars.out_fig,explabel[0]),bbox_inches='tight',dpi=200, format='pdf')
 
     return fig,ax    
+
+def temporal(fig,ax,toplot,var):
+
+    
+    ax2 = ax.twinx()
+
+    ax2.axhline(y=0.5, color='r', linestyle='--', linewidth=1)
+
+    ax2.plot(toplot.time[:].values,toplot[var[0]].values,color='lime')
+
+    ax2.set_ylabel(r'[mmh$^{-1}$]',fontsize=8)
+
+
+    ax2.set_ylim([var[1][0],var[1][1]])
+    
+    #ax2.xaxis_date()
+    ##date_form = mdates.DateFormatter("%H" )
+    ##ax2.xaxis.set_major_formatter(date_form)
+    ##
+    ##locatormax = mdates.HourLocator(interval=2)
+    ##locatormin = mdates.HourLocator(interval=1)
+    ##ax2.xaxis.set_minor_locator(locatormin)
+    #ax2.xaxis.set_major_locator(locatormax)
+    
+    #if hours:
+    #ax2.set_xlim([hours[0],hours[1]])
+
+    return fig,ax,ax2
+
 
 def base_top_cloud(fig,ax,ex):
 
@@ -187,80 +219,73 @@ def base_top_cloud(fig,ax,ex):
 
     ctop  =[]
     ctop2 =[]
+    clfc  =[]
     cbase =[]
     cbase2=[]
     pblh  =[]
     cmflx =[]
 
+    lim_qc=0.0025
+
     for i in range(0,tam):
 
         index1  =  np.argmin(ex.TVFLUX[i][0:maxl].values)
+        #print(index1,ex.TVFLUX[i][index1].values)
+
+        #indexmc =  np.max(  ex.MCUP[i][:].values)
         indexc  =  np.argmax(   ex.CLD[i][0:maxl].values)
 
-        #for j in range(1,10):
-        #for goamazon 
-        #for j in range(1,5):
-        for j in range(1,20):
+        for j in range(0,20):
 
             index2=index1+j
 
-            if ex.TVFLUX[i][index2].values>0 and index1>3:
+            if (ex.QC[i][index2].values > lim_qc) and (index1>5):
 
-                indexmin=index2
+                indexbase=index2
 
                 break
 
             else:
-                    indexmin=index1
+                indexbase=index1
+
+
+        indexmin=index1
+        for j in range(0,20):
+
+            #index3=indexbase+j
+            index3=index1+j
+
+            if ex.TVFLUX[i][index3].values>0:
+
+                #print(ex.TVFLUX[i][index1].values,ex.TVFLUX[i][index3].values)
+                
+                indexmin=index3
+
+                break
+
+            #else:
+            #    indexmin=index1
 
         #for gomazon paper
-        #for i1 in range(0,70):
-        for i1 in range(0,100):
+        for j in range(0,80):
 
-             index3=indexmin+i1
+            index4=indexbase+j
+            #index4=index1+j
 
-             #paper goamazon
-             #if ex.QC[i][index3]<0.001 :
-             if ex.QC[i][index3].values<0.005 :
+            if (ex.QC[i][index4].values < lim_qc):
 
-                 indexmax=index3
+                indexmax=index4
 
-                 break
-        #for i2 in range(0,70):
+                break
 
-        #         index4=indexmin+i1
-
-        #         if ex.CLD[i][index4]<0.001 :
-
-        #             indexmax2=index4
-
-        #             break
-
-        #for i1 in range(0,70):
-
-        #    index3=indexmin+i1
-
-        #    if ex.CLD[i][index3]<0.0005:
-
-        #        indexmax=index3
-
-        #        break
-
-        ##for i1 in range(0,70):
-
-        ##    index3=indexmin+i1
-
-        ##    if ex.MCUP[i][index3]<0.001:
-
-        ##        indexmax=index3
-
-        ##        break
-
+            #else:
+            #    indexmax=indexbase
 
 
         pblh.append(ex.z[index1].values/1000.0)
-        cbase.append(ex.z[indexmin].values/1000.0)
+        clfc.append(ex.z[indexmin].values/1000.0)
         cmflx.append(ex.MCUP[i,indexmin].values)
+        cbase.append(ex.z[indexbase].values/1000.0)
         cbase2.append(ex.z[indexc].values/1000.0)
         ctop.append(ex.z[indexmax].values/1000.0)
 
@@ -270,9 +295,9 @@ def base_top_cloud(fig,ax,ex):
     #idi2     = datetime(ex.datei.year,ex.datei.month,ex.datei.day,10)#dt.datetime(2014, days[2] ,days[0], 10)
     #idf2     = datetime(ex.datef.year,ex.datef.month,ex.datef.day,18)#dt.datetime(2014, days[2] ,days[0], 10)
     ##idf2     = ex.datef#dt.datetime(2014, days[3] ,days[0], 18)
-    date_format = '%Y-%m-%dT%H'
-    idi2=dt.datetime.strptime('2025-01-01T10', date_format)
-    idf2=dt.datetime.strptime('2025-01-01T17', date_format)
+    date_format = '%Y-%m-%dT%H:%M'
+    idi2=dt.datetime.strptime('2025-01-01T11:00', date_format)
+    idf2=dt.datetime.strptime('2025-01-01T16:40', date_format)
     time1 = np.datetime64(idi2) 
     time2 = np.datetime64(idf2) 
 
@@ -281,8 +306,8 @@ def base_top_cloud(fig,ax,ex):
     # To find 13 and 14 hours
     #i13     = datetime(ex.datef.year,ex.datef.month,ex.datef.day,13)#dt.datetime(2014, days[2] ,days[0], 10)
     #i14     = datetime(ex.datef.year,ex.datef.month,ex.datef.day,14)#dt.datetime(2014, days[2] ,days[0], 10)
-    i13=dt.datetime.strptime('2025-01-01T13', date_format)
-    i14=dt.datetime.strptime('2025-01-01T14', date_format)
+    i13=dt.datetime.strptime('2025-01-01T13:00', date_format)
+    i14=dt.datetime.strptime('2025-01-01T14:0', date_format)
     i3 = np.datetime64(i13) 
     i4 = np.datetime64(i14) 
 
@@ -330,45 +355,57 @@ def base_top_cloud(fig,ax,ex):
     print('MF Deep=',top_mf-cbmf)
     
 
-    n = 3#nf2-ni2  # the larger n is, the smoother curve will be
+    n = 4#nf2-ni2  # the larger n is, the smoother curve will be
     b = [1.0 / n] * n
     a = 1
 
 
     cbasef = lfilter(b, a, cbase)
 
+    #lfcbf  = lfilter(b, a, clfc)
+
     pblhf = lfilter(b, a, pblh)
 
     ctopf = lfilter(b, a, ctop)
 
-    ax.plot( ex.time[ni2:nf2:step]     , cbasef[ni2:nf2:step] ,color='fuchsia' ,dashes=[1,0]  ,linewidth=1.0,alpha=1.0,marker='')
+    n = 10#nf2-ni2  # the larger n is, the smoother curve will be
+    b = [1.0 / n] * n
+    a = 1
+
+    lfcbf  = lfilter(b, a, clfc)
+
 
     ax.plot( ex.time[ni2:nf2:step]     , pblhf[ni2:nf2:step]  ,color='navy'     ,linewidth=1.0,alpha=1.0,marker='')
 
-    ax.plot( ex.time[ni2:nf2:step]     , ctopf[ni2:nf2:step]  ,color='black' ,  dashes=[1,0]  ,linewidth=1.0,alpha=1.0,marker='')
+    ax.plot( ex.time[ni2:nf2:step]     , cbasef[ni2:nf2:step] ,color='fuchsia' ,dashes=[1,0]  ,linewidth=1.0,alpha=1.0,marker='')
 
-    ax.plot( ex.time[ni2:nf2:step]     , cbase2[ni2:nf2:step]  ,color='lime' ,  dashes=[1,0]  ,linewidth=1.0,alpha=1.0,marker='')
+    #ax.plot( ex.time[ni2:nf2:step]     , lfcbf[ni2:nf2:step]  ,color='lime' ,  dashes=[1,0]  ,linewidth=1.0,alpha=1.0,marker='')
+
+    ax.plot( ex.time[ni2:nf2:step]     , ctopf[ni2:nf2:step]  ,color='black' ,  dashes=[1,1]  ,linewidth=1.0,alpha=1.0,marker='')
+
 
 
     ytex,ytex2= down.data_n(time1,time2,ex.time[:].values)
 
-    text1   ='$\mathrm{h_{b}}$'
-    idtex1  = idf2-timedelta(hours=2, minutes=30)
-    ax.text(idtex1, pblhf[ytex2]+0.2 , r' %s'%(text1), fontsize=7, color='fuchsia')
 
-    text2='$\mathrm{Z_i}$'
+    #pblh
+    text1='$\mathrm{Z_i}$'
     idtex1    = idf2-timedelta(hours=0, minutes=0)
-    ax.text(idtex1,pblhf[ytex2] -0.1 , r' %s'%(text2), fontsize=6, color='navy')
+    ax.text(idtex1,pblhf[ytex2] -0.1 , r' %s'%(text1), fontsize=6, color='navy')
 
-    text1='LFC'
-    #text1='NCL'
+    text2   ='$\mathrm{h_{b}}$'
     idtex2    = idf2-timedelta(hours=0, minutes=0)
-    ax.text(idtex2,cbasef[ytex2]+0.0 , r' %s'%(text1), fontsize=6, color='lime')
+    ax.text(idtex2, cbasef[ytex2]+0.0 , r' %s'%(text2), fontsize=7, color='fuchsia')
 
-    text3='$\mathrm{h_{t}}$'
+    text3='LFC'
+    ##text1='NCL'
+    idtex3  = idf2-timedelta(hours=2, minutes=30)
+    #ax.text(idtex3,cbase2[ytex2]+0.1 , r' %s'%(text3), fontsize=6, color='lime')
+
+    text4='$\mathrm{h_{t}}$'
     #text3='$\mathrm{h_{topo}}$'
-    idtex3    = idf2-timedelta(hours=0, minutes=00)
-    ax.text(idtex3,ctopf[ytex2]+0.2 , r' %s'%(text3), fontsize=7, color='black')
+    idtex4    = idf2-timedelta(hours=0, minutes=00)
+    ax.text(idtex4,ctopf[ytex2]+0.2 , r' %s'%(text4), fontsize=7, color='black')
 
     #if ex.name=='m_w_l' or  ex.name=='large':
     #    ax.text(idtex3,ctopf[ytex2]-0.4 , r' %s'%(text3), fontsize=7, color='black')

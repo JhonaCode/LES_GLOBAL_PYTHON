@@ -5,6 +5,63 @@ import  datetime as dt
 ##################################
 
 ##################################
+def default_values_sam_box(ex,vname,limx,limy,var_to,color,explabel1,explabel2,leg_loc,show,k,j): 
+
+
+    #name    =   str(ex.name.values)#+'_'+dates[0]
+
+    maxv=np.min(ex[vname].values)#.max
+    minv=np.max(ex[vname].values)#.min
+
+    minh=np.min(ex.time[:].values)
+    maxh=np.max(ex.time[:].values)
+
+    limx.append([minv,maxv,10])
+    limy.append([minh,maxh])         
+
+    var_to.append(1)
+
+    color.append('coolwarm')
+
+    exl1=0
+    exl2=0
+
+    if not explabel1:
+        exl1=''
+        #exl1=[]
+    else: 
+        exl1=explabel1[k][j]
+        #if k==-1:
+        #    exl1=explabel1[j]
+        #else:
+        #    exl1=explabel1[k][j]
+
+
+    if not explabel2:
+        exl2=[]
+    else: 
+        if k==-1:
+            exl2=explabel2[j]
+        else:
+            exl2=explabel2[k][j]
+
+    if not leg_loc:
+
+        ll1=[(maxv-minv)/4.0+minv,maxh*0.90]
+        #legent loc
+        l1         = (ll1,ll1,['vertical',True,'[%s]'%ex[vname].units],['%s'%vname,True],['z',True],[False],[1,1])
+
+    else:
+        leg_loc=leg_loc[k][j]
+
+    if not show:
+        show='True'
+
+
+    return limx[j],limy[j],var_to[j],color[j],exl1,exl2,leg_loc,show
+
+
+##################################
 def default_values_2d(exp,varst,lim,alt,var_to,color,explabel1,explabel2,axis_on,show,k): 
 
     el=len(exp) 
@@ -318,8 +375,14 @@ def default_values_sam_2d_kj(ex,vname,z,lim,alt,var_to,color,explabel1,explabel2
 
     if not explabel1:
         exl1=''
+        #exl1=[]
     else: 
         exl1=explabel1[k][j]
+        #if k==-1:
+        #    exl1=explabel1[j]
+        #else:
+        #    exl1=explabel1[k][j]
+
 
     if not explabel2:
         exl2=[]
@@ -441,7 +504,7 @@ def default_values_sam_diurnal(ex,vname,z,lim,alt,var_to,color,explabel1,explabe
     if not leg_loc:
         ll1=[(maxv-minv)/4.0+minv,maxh*0.8]
         #legent loc
-        l1         = (ll1,local2,['upper right',False],['%s'%vname,True],['z',True],[1,1])
+        l1         = (ll1,local2,['upper right',False],['%s'%vname,True],['z',True],[1,1,0])
 
         leg_loc=l1
     else:
@@ -449,6 +512,8 @@ def default_values_sam_diurnal(ex,vname,z,lim,alt,var_to,color,explabel1,explabe
             leg_loc=leg_loc[j]
         else:
             leg_loc=leg_loc[k][j]
+
+
 
     if not diurnal:
         diurnal=[1,'True',[]]

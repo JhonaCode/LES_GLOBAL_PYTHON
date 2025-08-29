@@ -281,7 +281,7 @@ def diurnal_hours_exps_sam_xr(exp,variables,date,name=[],explabel1=[],explabel2=
             #Its no necessary to calculate de height
             z=ex.z.values
 
-            limu,altu,var_tou,coloru,explabel1u,explabel2u,leg_locu,diurnalu,showu=df.default_values_sam_diurnal(ex,var,z,lim,alt,var_to,color,explabel1,explabel2,leg_loc,diurnal,show,k,j)
+            limu,altu,var_tou,coloru,explabel1u,explabel2u,leg_locu,diurnalu,showu,lineu=df.default_values_sam_diurnal(ex,var,z,lim,alt,var_to,color,explabel1,explabel2,leg_loc,diurnal,show,k,j)
 
             data=tovar[var][:,:]*var_tou
 
@@ -291,6 +291,7 @@ def diurnal_hours_exps_sam_xr(exp,variables,date,name=[],explabel1=[],explabel2=
             
             #lines per hour
             ch=diurnalu[0]
+
 
             try:
                 #hour to plot
