@@ -1,4 +1,4 @@
-# MAPS_python
+# LES_GLOBAL_PYTHON
 
 To use:
 
