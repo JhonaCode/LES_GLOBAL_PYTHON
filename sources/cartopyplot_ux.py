@@ -30,7 +30,7 @@ import subprocess, sys
 
 #from cartopy.mpl.gridliner import LONGITUDE_FORMATTER, LATITUDE_FORMATTER
 
-#to cp the parametres defaul 
+#to cp the parametres default 
 subprocess.run('cp Parameters_default.py /pesq/dados/bamc/jhonatan.aguirre/git_repositories/MAPS_python/sources/', shell = True, executable="/bin/bash")
 
 #used the user parameter to plot(plotparameter.py) if para:

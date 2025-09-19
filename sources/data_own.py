@@ -1,9 +1,3 @@
-#IN
-#data: my data
-#time: Time vectors with data.
-#Out
-#index
-
 import datetime as dt
 
 import xarray as xr
@@ -16,68 +10,88 @@ import numpy as np
 
 from collections import deque
 
-import variables_to_drop as vd
+###import variables_to_drop as vd
 
-#parallel
-import concurrent.futures
-import logging
 import threading
-import time
+
+import concurrent.futures
+
 import queue
-import random
 
-def concatenate_month_queue(date,grid,path,header,name,UTC=0,npp=6,variables=[]):
+import logging
+
+# Global counter and lock
+completed_lock = threading.Lock()
+completed = 0  # will reset per function call
+
+# Progress bar function
+def update_progress_bar(total_tasks, bar_length=30):
+    global completed
+    with completed_lock:
+        completed += 1
+        percent = completed / total_tasks
+        filled = int(bar_length * percent)
+        bar = "#" * filled + "-" * (bar_length - filled)
+        print(f"\r[{bar}] {percent*100:.1f}%", end="")
+        if completed == total_tasks:
+            print()  # new line at 100%
+
+
+def producer(queue, database, k, total_tasks):
+    try:
+        mm = database.read(k)
+        queue.put(mm)
+    finally:
+        update_progress_bar(total_tasks)
+
+# Consumer function
+def consumer(queue, database, n_tasks):
+    finished_producers = 0
+    while True:
+        item = queue.get()
+        if item is None:  # sentinel
+            finished_producers += 1
+            if finished_producers == n_tasks:
+                break
+            else:
+                continue
+        database.dataset.append(item)
+
+# Main function
+def concatenate_month_queue(date, grid, path, header, name, UTC=0, npp=6, variables=[]):
+    global completed
+    completed = 0  # reset counter for each function call
+
+    print(f"Reading and concatenating files of {name}")
     format = "%(asctime)s: %(message)s"
-    logging.basicConfig(format=format, level=logging.INFO,
-                        datefmt="%H:%M:%S")
+    logging.basicConfig(format=format, level=logging.INFO, datefmt="%H:%M:%S")
 
-    database = ldataset(date,path,grid,header,npp,name,UTC,variables)
-
-    #pipeline = queue.Queue(maxsize=10)
+    database = ldataset(date, path, grid, header, npp, name, UTC, variables)
     pipeline = queue.Queue()
 
-    event = threading.Event()
+    # Determine actual number of tasks to avoid IndexError
+    n_tasks = len(database.range)
+    if n_tasks == 0:
+        print("No files to read.")
+        return database.dataset
 
+    # Limit number of threads to available tasks
+    npp = min(npp, n_tasks)
+
+    # Submit producer tasks for valid indices only
     with concurrent.futures.ThreadPoolExecutor(max_workers=npp) as executor:
-        for k in range(0,npp):
+        for k in range(n_tasks):
+            executor.submit(producer, pipeline, database, k, n_tasks)
 
-            executor.submit(producer,pipeline,event,database,k,npp)
+    # Add sentinels for consumer
+    for _ in range(n_tasks):
+        pipeline.put(None)
 
-    consumer(pipeline,database)
+    # Start consumer
+    consumer(pipeline, database, n_tasks)
 
+    print("End of Reading")
     return database.dataset
-
-def producer(queue, event,database,k,npp):
-
-    #while not event.is_set() or k < npp-1: 
-
-    logging.info("Producer read file: %s---no:%s", database.range[k],k)
-    mm=database.read(k)
-
-    #mm = random.randint(1, 101)
-    #mm1 = random.randint(1, 101)
-    #print(mm)
-
-    queue.put(mm)
-
-    logging.info("Producer received event. Exiting")
-
-def consumer(queue,database):
-
-    #while even.is_set or not queue.empty():
-    while not queue.empty():
-
-        mm = queue.get()
-        #print('consumer',mmm)
-
-        #logging.info(
-        #    "Consumer adding dataset part for a no %s", k
-        #)
-
-        database.dataset.append(mm)
-
-    logging.info("Consumer received event. Exiting")
-
 
 class ldataset:
 
@@ -103,12 +117,12 @@ class ldataset:
         self.range=dates_range(npp,self.nd,self.ndays)
         self.variables=variables
 
-        print(self.range,'rangex')
+        #print(self.range,'rangex')
         #print(self.name)
 
     def read(self, name):
 
-        logging.info("Thread %s: starting read", name)
+        #logging.info("Thread %s: starting read", name)
         #print(self.range[name])
 
         nc_files=[]
@@ -124,204 +138,29 @@ class ldataset:
                 nc_files.append(nc)
                 #print( nc)
 
-        #exit()
+        # Get a list of all variables in the first file
+        #all_vars = list(xr.open_dataset(nc_files[0], engine='netcdf4').variables)
+        
+        # Compute variables to drop
+        #drop_vars = [v for v in all_vars if v not in self.variables] 
 
-        #print(self.grid)
-        #print('hola')
-        #print(len(nc_files))
-        #print(nc_files[0])
-        #mm = ux.open_dataset(self.grid,nc_files[0])
+        #print(drop_vars)
 
+        mm = ux.open_mfdataset(
+                                self.grid,
+                                nc_files,
+                                combine='nested', 
+                                concat_dim='Time',
+                                parallel=False,
+                                engine='netcdf4',
+                                drop_variables=self.variables,
+                                #drop_variables=drop_vars,
+        )
 
-        mm = ux.open_mfdataset(self.grid,nc_files,combine='nested', concat_dim='Time',parallel=False,engine='netcdf4')
+        #if self.variables: 
+        #   #print('variables drops')
+        #   mm=mm.drop_vars(self.variables) 
 
-        #variables=vd.variables[:]
-
-        #variables=[
-        #'edmf_a_isobaric',
-        #'edmf_w_isobaric',
-        #'edmf_qt_isobaric',
-        #'edmf_qc_isobaric',
-        #'edmf_thl_isobaric',
-        #'edmf_ent_isobaric',
-        #'sub_thl_isobaric',
-        #'sub_qv_isobaric',
-        #'det_thl_isobaric',
-        #'det_qv_isobaric',
-        #'olrtoa',
-        #'refl10cm_max',
-        #'refl10cm_1km',
-        #'refl10cm_1km_max',
-        #'u10',
-        #'v10',
-        #'q2',
-        #'th2m',
-        #'mslp',
-        #'dewpoint_200hPa',
-        #'temperature_200hPa',
-        #'height_200hPa',
-        #'uzonal_200hPa',
-        #'umeridional_200hPa',
-        #'w_500hPa',
-        #'vorticity_925hPa',
-        #'cldfrac_tot_UPP',
-        #'cldfrac_isobaric',
-        #'rthratenlw_isobaric',
-        #'rthratensw_isobaric',
-        #'uvel_isobaric',
-        #'vvel_isobaric',
-        #'zgeo_isobaric',
-        #'cape',
-        #'cin',
-        #'lcl',
-        #'lfc',
-        #'sst',
-        #'xice',
-        #'spmt',
-        #'sfc_runoff',
-        #'udr_runoff',
-        #'sms_total',
-        #'smois_lys01',
-        #'smois_lys02',
-        #'smois_lys03',
-        #'smois_lys04',
-        #'tslb_lys01',
-        #'tslb_lys02',
-        #'tslb_lys03',
-        #'tslb_lys04',
-        #'h_pbl',
-        #'qke_isobaric',
-        #'kzh_isobaric',
-        #'kzm_isobaric',
-        #'kzq_isobaric',
-        #'t02mt',
-        #'q02mt',
-        #'u10mt',
-        #'v10mt',
-        #'acrefl10cm_max',
-        #'acrefl10cm_1km',
-        #'re_cloud_isobaric',
-        #'re_ice_isobaric',
-        #'qc_isobaric',
-        #'qi_isobaric',
-        #'qr_isobaric',
-        #'qs_isobaric',
-        #'qg_isobaric',
-        #'ni_isobaric',
-        #'nr_isobaric',
-        #'nc_isobaric',
-        #'rre_cloud_isobaric',
-        #'rre_ice_isobaric',
-        #'rre_snow_isobaric',
-        #'ciwpth_isobaric',
-        #'clwpth_isobaric',
-        #'cswpth_isobaric',
-        #'cldfrac_bl_isobaric',
-        #'qc_bl_isobaric',
-        #'qi_bl_isobaric',
-        #'cov_isobaric',
-        #'el_pbl_isobaric',
-        #'qke_adv_isobaric',
-        #'qsq_isobaric',
-        #'tsq_isobaric',
-        #'tke_pbl_isobaric',
-        #'dqke_isobaric',
-        #'qbuoy_isobaric',
-        #'qdiss_isobaric',
-        #'qshear_isobaric',
-        #'qwt_isobaric',
-        #'edmf_a_isobaric',
-        #'edmf_w_isobaric',
-        #'edmf_qt_isobaric',
-        #'edmf_qc_isobaric',
-        #'edmf_thl_isobaric',
-        #'edmf_ent_isobaric',
-        #'sub_thl_isobaric',
-        #'sub_qv_isobaric',
-        #'det_thl_isobaric',
-        #'det_qv_isobaric',
-        #        ]
-
-        variables=[
-        'olrtoa',
-        #'refl10cm_max',
-        #'refl10cm_1km',
-        #'refl10cm_1km_max',
-        'u10',
-        'v10',
-        'q2',
-        't2m',
-        #'th2m',
-        'mslp',
-        'dewpoint_200hPa',
-        'temperature_200hPa',
-        'height_200hPa',
-        'uzonal_200hPa',
-        'umeridional_200hPa',
-        'w_500hPa',
-        'vorticity_925hPa',
-        'cldfrac_tot_UPP',
-        'cldfrac_isobaric',
-        'rthratenlw_isobaric',
-        'rthratensw_isobaric',
-        'uvel_isobaric',
-        'vvel_isobaric',
-        'zgeo_isobaric',
-        #'w_isobaric',
-        #'atmt_isobaric',
-        'shmt_isobaric',
-        'uvmt_isobaric',
-        'vvmt_isobaric',
-        'ghmt_isobaric',
-        'ommt_isobaric',
-        'z_isobaric',
-        'z_iso_levels',
-        'u_iso_levels',
-        'cape',
-        'cin',
-        'lcl',
-        'lfc',
-        'sst',
-        'xice',
-        'spmt',
-        'sfc_runoff',
-        'udr_runoff',
-        'sms_total',
-        'smois_lys01',
-        'smois_lys02',
-        'smois_lys03',
-        'smois_lys04',
-        'tslb_lys01',
-        'tslb_lys02',
-        'tslb_lys03',
-        'tslb_lys04',
-        'h_pbl',
-        'qke_isobaric',
-        'kzh_isobaric',
-        'kzm_isobaric',
-        'kzq_isobaric',
-        'q02mt',
-        'u10mt',
-        'v10mt',
-        #'acrefl10cm_max',
-        #'acrefl10cm_1km',
-        #'acrefl10cm_1km_max'
-                ]
-
-        ##print(variables)
-
-        if self.variables: 
-           print('variables drops')
-           mm=mm.drop_vars(variables) 
-
-        #print(mm)
-        #print('jaklfj')
-        ##exit()
-
-        #print(mm.variables)
-        ##jjexit()
-        #jprint(self.variables)
-        #exit()
         mm['name']   = self.name
 
         mm['netshsf']=mm['acswdnb']-mm['acswupb']
@@ -342,7 +181,7 @@ class ldataset:
         self.mm = mm
 
         return mm
-        #self.dataset.append(mm)
+
 
 def concatenate_month_queue_era5(date,path,header,name,UTC=0,npp=6,variables=[]):
     format = "%(asctime)s: %(message)s"
@@ -386,7 +225,7 @@ class ldataset_era5:
         self.range=dates_range(npp,self.nd,self.ndays)
         self.variables=variables
 
-        print(self.range,'rangex')
+        #print(self.range,'rangex')
 
     def read(self, name):
 
@@ -477,7 +316,7 @@ class load_dataset:
         self.hours_step=1
         self.range=dates_range(npp,self.nd,self.ndays)
 
-        print(self.range,'range')
+        #print(self.range,'range')
         #print(self.name)
 
     def update(self, name,drange):
@@ -495,7 +334,7 @@ class load_dataset:
 
             for i in drange[name]: 
 
-                print(self.dates[i])
+                #print(self.dates[i])
 
                 diag=gerate_data_mpas(self.dates[i],self.dates[i+1],self.hours_step,'%Y-%m-%d_%H.%M'+'.00')
 
@@ -799,7 +638,7 @@ def concatenate_month(date,grid,path,header,name,UTC=0,np=4):
 
         for i in  range(ni,ndays+ni): 
 
-            print(dates[i])
+            #print(dates[i])
             diag=dn.gerate_data_mpas(dates[i],dates[i+1],hours_step,'%Y-%m-%d_%H.%M'+'.00')
     
             if(k==0):
