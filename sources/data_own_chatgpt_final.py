@@ -1,11 +1,3 @@
-"""
-#to correcto this error: line
-        if not nc_files:
-            #print(f"No files to read for task {name} ({self.name})")
-            #to correcto this error
-            print('xxxxx')
-            return None
-"""
 import datetime as dt
 
 import xarray as xr
@@ -28,23 +20,11 @@ import queue
 
 import logging
 
-
-import datetime as dt
-import xarray as xr
-import pandas as pd
-import uxarray as ux
-import numpy as np
-import logging
-import threading
-import concurrent.futures
-
-import os  # <--- add this
-
 # Global counter and lock
 completed_lock = threading.Lock()
 completed = 0  # will reset per function call
 
-# ✅ Progress bar function
+# Progress bar function
 def update_progress_bar(total_tasks, bar_length=30):
     global completed
     with completed_lock:
@@ -54,101 +34,117 @@ def update_progress_bar(total_tasks, bar_length=30):
         bar = "#" * filled + "-" * (bar_length - filled)
         print(f"\r[{bar}] {percent*100:.1f}%", end="")
         if completed == total_tasks:
-            print()  # newline at 100%
+            print()  # new line at 100%
 
 
-# ✅ Main function with modern futures
+def producer(queue, database, k, total_tasks):
+    try:
+        mm = database.read(k)
+        queue.put(mm)
+    finally:
+        update_progress_bar(total_tasks)
+
+# Consumer function
+def consumer(queue, database, n_tasks):
+    finished_producers = 0
+    while True:
+        item = queue.get()
+        if item is None:  # sentinel
+            finished_producers += 1
+            if finished_producers == n_tasks:
+                break
+            else:
+                continue
+        database.dataset.append(item)
+
+# Main function
 def concatenate_month_queue(date, grid, path, header, name, UTC=0, npp=6, variables=[]):
     global completed
-    completed = 0  # reset counter for each call
+    completed = 0  # reset counter for each function call
 
     print(f"Reading and concatenating files of {name}")
-    logging.basicConfig(format="%(asctime)s: %(message)s", level=logging.INFO, datefmt="%H:%M:%S")
+    format = "%(asctime)s: %(message)s"
+    logging.basicConfig(format=format, level=logging.INFO, datefmt="%H:%M:%S")
 
     database = ldataset(date, path, grid, header, npp, name, UTC, variables)
+    pipeline = queue.Queue()
 
+    # Determine actual number of tasks to avoid IndexError
     n_tasks = len(database.range)
     if n_tasks == 0:
-        print(f"No files to read for {name}")
+        print("No files to read.")
         return database.dataset
 
-    # Limit threads to number of tasks
+    # Limit number of threads to available tasks
     npp = min(npp, n_tasks)
 
-    # ✅ Run each read in a thread, collect results as they finish
+    # Submit producer tasks for valid indices only
     with concurrent.futures.ThreadPoolExecutor(max_workers=npp) as executor:
-        futures = [executor.submit(database.read, k) for k in range(n_tasks)]
-        for future in concurrent.futures.as_completed(futures):
-            try:
-                result = future.result()
-                if result is not None:
-                    database.dataset.append(result)
-            except Exception as e:
-                print(f"Error in task: {e}")
-            finally:
-                update_progress_bar(n_tasks)
+        for k in range(n_tasks):
+            executor.submit(producer, pipeline, database, k, n_tasks)
 
-    print(f"End of Reading {name}")
+    # Add sentinels for consumer
+    for _ in range(n_tasks):
+        pipeline.put(None)
+
+    # Start consumer
+    consumer(pipeline, database, n_tasks)
+
+    print("End of Reading")
     return database.dataset
 
-
-# ✅ Dataset class stays the same
 class ldataset:
-    def __init__(self, date, path, grid, header, npp, name, UTC, variables):
-        self.dataset = []
-        self.path0 = path[0]
-        self.path1 = path[1]
-        self.grid = grid
-        self.header1 = header[0]
-        self.header2 = header[1]
-        self.name = name
-        self.UTC = UTC
-        self.mm = []
 
-        datei = date[0]
-        datef = date[1]
-        hours_step = 24
-        self.dates = gerate_data(datei, datef, hours_step, "%Y%m%d%H")
-        self.nd = len(self.dates)
-        self.ndays = int(self.nd / (npp))
-        self.hours_step = 1
-        self.range = dates_range(npp, self.nd, self.ndays)
-        self.variables = variables
+    def __init__(self,date,path,grid,header,npp,name,UTC,variables):
+
+        self.dataset  = []
+        self.path0    = path[0] 
+        self.path1    = path[1] 
+        self.grid     = grid 
+        self.header1  = header[0]
+        self.header2  = header[1]
+        self.name     = name 
+        self.UTC      = UTC 
+        self.mm       = [] 
+
+        datei=date[0]
+        datef=date[1]
+        hours_step=24
+        self.dates=gerate_data(datei,datef,hours_step,'%Y%m%d%H')
+        self.nd=len(self.dates)
+        self.ndays=int(self.nd/(npp))
+        self.hours_step=1
+        self.range=dates_range(npp,self.nd,self.ndays)
+        self.variables=variables
+
+        #print(self.range,'rangex')
+        #print(self.name)
 
     def read(self, name):
-        nc_files = []
 
-        for i in self.range[name]:
-            # ✅ skip last index to avoid out-of-range
-            if i + 1 >= len(self.dates):
-                continue
+        #logging.info("Thread %s: starting read", name)
+        #print(self.range[name])
 
-            diag = gerate_data_mpas(
-                self.dates[i], self.dates[i + 1],
-                self.hours_step, "%Y-%m-%d_%H.%M.00"
-            )
+        nc_files=[]
 
-            if not diag or not diag[0]:
-                continue  # skip empty result
+        for i in self.range[name]: 
+
+
+            diag=gerate_data_mpas(self.dates[i],self.dates[i+1],self.hours_step,'%Y-%m-%d_%H.%M'+'.00')
+
 
             for diagi in diag[0]:
-                nc = (
-                    f"{self.path0}/{self.header1}_{self.dates[i]}_{self.dates[i+1]}/"
-                    f"{self.path1}/{self.header2}{diagi}.nc"
-                )
+                nc=self.path0+'/%s_%s_%s/'%(self.header1,self.dates[i],self.dates[i+1])+self.path1+'/%s'%(self.header2)+diagi+'.nc'
                 nc_files.append(nc)
+                #print( nc)
 
-        if not nc_files:
-            #print(f"No files to read for task {name} ({self.name})")
-            #to correcto this error
-            print('xxxxx')
-            return None
+        # Get a list of all variables in the first file
+        #all_vars = list(xr.open_dataset(nc_files[0], engine='netcdf4').variables)
+        
+        # Compute variables to drop
+        #drop_vars = [v for v in all_vars if v not in self.variables] 
 
-        #mm = ux.open_mfdataset(
-        #    self.grid, nc_files,
-        #    combine="nested", concat_dim="Time",
-        #    parallel=False, engine="netcdf4"
-        #)
+        #print(drop_vars)
 
         mm = ux.open_mfdataset(
                                 self.grid,
@@ -161,20 +157,30 @@ class ldataset:
                                 #drop_variables=drop_vars,
         )
 
-        #if self.variables:
-        #    mm = mm.drop_vars(self.variables)
+        #if self.variables: 
+        #   #print('variables drops')
+        #   mm=mm.drop_vars(self.variables) 
 
-        mm["name"] = self.name
-        mm["netshsf"] = mm["acswdnb"] - mm["acswupb"]
-        mm["netlwsf"] = mm["aclwdnb"] - mm["aclwupb"]
-        mm["netsf"] = mm["netshsf"] - mm["netlwsf"]
-        mm["netsf_dw"] = mm["acswdnb"] - mm["aclwdnb"]
+        mm['name']   = self.name
 
-        ltime = pd.to_datetime(mm.Time) + dt.timedelta(hours=self.UTC)
-        mm["Time"] = ltime
+        mm['netshsf']=mm['acswdnb']-mm['acswupb']
+
+        mm['netlwsf']=mm['aclwdnb']-mm['aclwupb']
+
+        mm['netsf']  =mm['netshsf']-mm['netlwsf']
+
+        ltime=pd.to_datetime(mm.Time)+dt.timedelta(hours=self.UTC)
+        ###########################################
+
+        mm['netsf_dw']=mm['acswdnb']-mm['aclwdnb']
+
+        mm['Time']=ltime
+
+        #print(self.variables)
 
         self.mm = mm
-        return mm        
+
+        return mm
 
 
 def concatenate_month_queue_era5(date,path,header,name,UTC=0,npp=6,variables=[]):

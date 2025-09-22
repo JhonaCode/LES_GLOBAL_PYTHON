@@ -56,10 +56,22 @@ def open_era5_by_vars(path, name, shortNames, date=None, lats=None, lons=None, U
     
     # merge all successfully loaded datasets
     if datasets:
+
         era5 = xr.merge(datasets, compat="override")
+
         era5["name"] = name
+
         ltime = pd.to_datetime(era5.time.values) + dt.timedelta(hours=UTC)
-        era5 = era5.assign_coords(local_time=("time", ltime))
+        #era5  = era5.assign_coords(local_time=("time", ltime))
+
+        #print(era5.time[0:10].values)
+
+        #era5['time'] = ltime
+        era5['time'] = ltime
+
+        #print(era5.time[0:10].values)
+
+        era5['ltime'] = ltime
     else:
         raise ValueError("No variables were successfully loaded from the GRIB file.")
     

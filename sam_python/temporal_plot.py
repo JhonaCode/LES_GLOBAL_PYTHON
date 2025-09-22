@@ -67,7 +67,10 @@ pars=importlib.import_module('.Parameters_default','sam_python',)
 #day0=0
 #data = down.data_to_reference(ex.data,day0,days[0][4])
 
-def temporal_plot_exp_var_xr(exp,date=[],variables=[],var_to=[],explabel1=[],days=[],explabel2=[],alt=[],plot_def=[],color=[],show=[]):
+def temporal_plot_exp_var_xr(exp,date=[],variables=[],var_to=[],explabel1=[],days=[],explabel2=[],alt=[],plot_def=[],color=[],show=[],save=None):
+
+    if save==None:
+        save=[]
 
     j=0
     for var in variables:
@@ -135,7 +138,13 @@ def temporal_plot_exp_var_xr(exp,date=[],variables=[],var_to=[],explabel1=[],day
         #label="%s_%s"%(name,var)
         label=label+"_%s"%(var)
 
-        plt.savefig('%s/temporal%s.pdf'%(pars.out_fig,label),bbox_inches='tight', format='pdf', dpi=200)
+        if save[0]:
+                try: 
+
+                    label=save[1]+"_%s"%(var)
+                    plt.savefig('%s/temporal_%s.pdf'%(pars.out_fig,label),bbox_inches='tight', format='pdf', dpi=200)
+                except:
+                    plt.savefig('%s/temporal%s.pdf'%(pars.out_fig,label),bbox_inches='tight', format='pdf', dpi=200)
 
         j+=1
 

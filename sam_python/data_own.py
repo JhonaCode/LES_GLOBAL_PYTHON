@@ -37,8 +37,11 @@ def data_load_xr(path,name,calendar):
     #hf=df.hour
     time=exp.time.values
 
+    #does not change the time 
     exp['time']=exp.ltime.values
     exp['ltime']=time
+
+    #exp['ltime']==exp.ltime.values
 
     #exp['ltime']=exp.ltime.values
 

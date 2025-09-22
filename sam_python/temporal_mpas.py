@@ -20,6 +20,8 @@ import  sam_python.plotparameters      as pp
 
 import  sam_python.forcing_file_common as ffc
 
+import copy
+
 import  sam_python.default_values      as df
 
 import importlib
@@ -199,10 +201,9 @@ def temporal_ex_hours_mpas_ux(exp,di,df,variables,exp2,variables2=[],exp3=[],var
 
         if era5:
 
-            i=0
-            for e5 in era5: 
-
-                fig,ax=era5_experiment(fig,ax,e5,vars_era5[j],explabel1[j][i],v2era[j],color[j][i],date=[di,df])
+            #i=0
+            #for e5 in era5: 
+            fig,ax=era5_experiment(fig,ax,e5,vars_era5[j],explabel1[j][i],v2era[j],color[j][i],date=[di,df])
             
     
         ax=label_plots(ax,leg_loc[j],'','')
@@ -220,21 +221,75 @@ def temporal_ex_hours_mpas_ux(exp,di,df,variables,exp2,variables2=[],exp3=[],var
 
     return 
 
-
 def era5_experiment(fig,ax,exp,variable,explabel,var2,color,date=[],diurnal=False):
     
     #as the pytime is no a dimension is no possibeol to 
     #use, because the sel not limit with this pytime, only 
     #with time. Then is bbetter to work with time and use the utc
     # to limit.
-    di=date[0]-dt.timedelta(hours=4)
-    df=date[1]-dt.timedelta(hours=4)
+    di=date[0] 
+    df=date[1] 
+
+    print(exp)
 
     if date:
         tomean = exp.sel(time=slice(di,df))
 
-    tomean['pytime']=pd.to_datetime(tomean.time)-dt.timedelta(hours=4)
-    print(tomean.pytime)
+    #exit()
+
+    #tomean['pytime']=pd.to_datetime(tomean.time)#-dt.timedelta(hours=4)
+    #print(tomean.pytime)
+
+    vlat    =   tomean[variable].mean(dim='latitude') 
+    vmean   =   vlat.mean(dim='longitude') 
+
+    hours=[]
+    tplot=[]
+    k=0
+    #for d in tomean.pytime: 
+    for d in range (0,len(tomean.time)): 
+    
+        #day    = tomean.pytime[d].dt
+        day    = tomean.ltime[d].dt
+
+        #print(tomean.pytime[d].values,tomean.time[k].values)
+
+        hours.append(day)
+
+        tplot.append(vmean[d]*var2)
+    
+        k+=1
+
+
+    if diurnal:
+
+        mean,hours   =   diurnal_main_2(tplot,hours)
+
+        plt.plot(hours,mean ,label='%s'%(explabel),color=color,linewidth=1.0,alpha=1.0)#,dashes=line)
+
+    else:
+
+        plt.plot(hours,tplot ,label='%s'%(explabel),color=color,linewidth=1.0,alpha=1.0)#,dashes=line)
+    #plt.plot(hours,vmean.values,linewidth=1.0,alpha=1.0)#,dashes=line)
+
+    return fig,ax
+
+
+def era5_experiment_old(fig,ax,exp,variable,explabel,var2,color,date=[],diurnal=False):
+    
+    #as the pytime is no a dimension is no possibeol to 
+    #use, because the sel not limit with this pytime, only 
+    #with time. Then is bbetter to work with time and use the utc
+    # to limit.
+
+    di=date[0]#-dt.timedelta(hours=4)
+    df=date[1]#-dt.timedelta(hours=4)
+
+    if date:
+        tomean = exp.sel(time=slice(di,df))
+
+    tomean['pytime']=pd.to_datetime(tomean.time)#-dt.timedelta(hours=4)
+    #print(tomean.pytime)
 
     vlat    =   tomean[variable].mean(dim='latitude') 
     vmean   =   vlat.mean(dim='longitude') 
@@ -264,7 +319,7 @@ def era5_experiment(fig,ax,exp,variable,explabel,var2,color,date=[],diurnal=Fals
 
     else:
 
-        plt.plot(hours,tplot.values ,label='%s'%(explabel),color=color,linewidth=1.0,alpha=1.0)#,dashes=line)
+        plt.plot(hours,tplot ,label='%s'%(explabel),color=color,linewidth=1.0,alpha=1.0)#,dashes=line)
     #plt.plot(hours,vmean.values,linewidth=1.0,alpha=1.0)#,dashes=line)
 
     return fig,ax
@@ -272,31 +327,35 @@ def era5_experiment(fig,ax,exp,variable,explabel,var2,color,date=[],diurnal=Fals
 def era5_experiment_step(fig,ax,exp,variable,explabel,var2,color,date=[],diurnal=False):
     
 
-    di=date[0]-dt.timedelta(hours=4)
-    df=date[1]-dt.timedelta(hours=4)
+    di=date[0] #-dt.timedelta(hours=4)
+    df=date[1] #-dt.timedelta(hours=4)
 
     if date:
         tomean = exp.sel(time=slice(di,df))
 
-    tomean['pytime']=pd.to_datetime(tomean.time)-dt.timedelta(hours=4)
+
+    #tomean['pytime']=pd.to_datetime(tomean.time)#-dt.timedelta(hours=4)
+
     vlat    =   tomean[variable].mean(dim='latitude') 
 
     vmean   =   vlat.mean(dim='longitude') 
+
     
     hours=[]
     tplot=[]
     k=0
-    for d in tomean.pytime: 
+    #for d in tomean.pytime: 
+    for d in vmean.time: 
     
         i=0
-        for s in tomean.step: 
 
-            #day    = d.dt.day.values
-            hour    = pd.to_datetime(d.values)+dt.timedelta(hours=i)
+        #print('d',d.values)
+        for s in vmean.step: 
 
-            hour    = hour.to_pydatetime()
+            hour    =d+s
+            #print('hour',hour.values)
 
-            hours.append(hour)
+            hours.append(hour.values)
 
             tplot.append(vmean[k][i]*var2)
 
@@ -307,19 +366,24 @@ def era5_experiment_step(fig,ax,exp,variable,explabel,var2,color,date=[],diurnal
 
     if diurnal:
 
+        
+        hours=pd.to_datetime(hours)
+
         mean,hours   =   diurnal_main_2(tplot,hours)
 
         plt.plot(hours,mean ,label='%s'%(explabel),color=color,linewidth=1.0,alpha=1.0)#,dashes=line)
 
     else:
 
-        plt.plot(hours,tplot.values ,label='%s'%(explabel),color=color,linewidth=1.0,alpha=1.0)#,dashes=line)
-    #plt.plot(hours,vmean.values,linewidth=1.0,alpha=1.0)#,dashes=line)
+        plt.plot(hours,tplot ,label='%s'%(explabel),color=color,linewidth=1.0,alpha=1.0)#,dashes=line)
+        #plt.plot(hours,vmean.values,linewidth=1.0,alpha=1.0)#,dashes=line)
 
     return fig,ax
 
 
-def temporal_ex_hours_mpas_parallel(exp,di,df,variables,exp2=[],variables2=[],exp3=[],variables3=[],era5=[],vars_era5=[],explabel1=[],explabel2=[],lev=[],lim=[],var21=[],var22=[],var23=[],v2era5=[],color=[],leg_loc=[],diurnal=[],show=[]): 
+def temporal_ex_hours_mpas_parallel(exp,di,df,variables,exp2=[],variables2=[],exp3=[],variables3=[],era5=[],vars_era5=[],explabel1=[],explabel2=[],lev=[],lim=[],var21=[],var22=[],var23=[],v2era5=[],color=[],leg_loc=[],diurnal=[],show=[],step_era5=False): 
+
+    lim_copy = copy.deepcopy(lim)
 
     #Date to referece
     year   = 2024
@@ -350,8 +414,8 @@ def temporal_ex_hours_mpas_parallel(exp,di,df,variables,exp2=[],variables2=[],ex
 
         if lim:
 
-            lim[j][0]=dt.datetime.strptime(lim[j][0], date_format)
-            lim[j][1]=dt.datetime.strptime(lim[j][1], date_format)
+            lim_copy[j][0]=dt.datetime.strptime(lim_copy[j][0], date_format)
+            lim_copy[j][1]=dt.datetime.strptime(lim_copy[j][1], date_format)
 
 
         i=0
@@ -411,18 +475,21 @@ def temporal_ex_hours_mpas_parallel(exp,di,df,variables,exp2=[],variables2=[],ex
             for ex2 in exp2: 
 
                 #n0,n1   =   down.data_n(di+dt.timedelta(hours=-0),df,ex2.ltime.values.astype('datetime64[s]'))
-                n0,n1   =   down.data_n(di,df,ex2.ltime.values.astype('datetime64[s]'))
+                n0,n1   =   down.data_n(di,df,ex2.time.values.astype('datetime64[s]'))
 
                 var2    =   variables2[j]
 
                 try:
-                    var2plot=ex2[var2][n0:n1,0].values
+                    #MPAS
+                    #var2plot=ex2[var2][n0:n1,0].values
+                    var2plot=ex2[var2][n0:n1,0,0].values
                 except:
+                    #LES
                     var2plot=ex2[var2][n0:n1].values
 
                 var2plot=   var2plot*var22[j]
 
-                time2   =   ex2.ltime[n0:n1].values
+                time2   =   ex2.time[n0:n1].values
 
                 #hours   =   down.data_to_reference_vector(time2,day_0,month_0,year)
                 #plt.plot(hours,var2plot ,label='%s'%(explabel1[j][i]),color=color[j][i],linewidth=1.0,alpha=1.0,marker='')#,dashes=line)
@@ -436,12 +503,12 @@ def temporal_ex_hours_mpas_parallel(exp,di,df,variables,exp2=[],variables2=[],ex
             #i=0
             for ex3 in exp3: 
 
-                n0,n1   =   down.data_n(di,df,ex3.ltime.values.astype('datetime64[s]'))
+                n0,n1   =   down.data_n(di,df,ex3.time.values.astype('datetime64[s]'))
 
                 var3     =   variables3[j]
                 var3plot =   ex3[var3][n0:n1,0,0].values
                 var3plot =   var3plot*var23[j]
-                time3    =   ex3.ltime[n0:n1]
+                time3    =   ex3.time[n0:n1]
                 hours    =   down.data_to_reference_vector(time3,day_0,month_0,year)
                 plt.plot(time3,var3plot ,label='%s'%(explabel1[j][i]),color=color[j][i],linewidth=1.0,alpha=1.0,marker='')#,dashes=line)
 
@@ -449,14 +516,15 @@ def temporal_ex_hours_mpas_parallel(exp,di,df,variables,exp2=[],variables2=[],ex
 
         if era5:
 
+            print("--------------")
+            print("-----era5-----")
+            print("--------------")
+
             for e5 in era5: 
 
                 fig,ax=era5_experiment_step(fig,ax,e5,vars_era5[j],explabel1[j][i],v2era5[j],color[j][i],date=[di,df],diurnal=False)
+
                 i+=1
-
-            #lim,var_to,color,explabel1,explabel2,leg_loc,show=df.default_temporal_mpas(ex,vall,var,hours,lim,var_to,color,explabel1,explabel2,leg_loc,diurnal,show)
-
-        #plt.axis([lim[j][0],lim[j][1],lim[j][2],lim[j][3]])
 
         ax=label_plots(ax,leg_loc[j],'','')
 
@@ -464,16 +532,24 @@ def temporal_ex_hours_mpas_parallel(exp,di,df,variables,exp2=[],variables2=[],ex
 
         fig.savefig('%s/temporal_%s.pdf'%(pars.out_fig,label),bbox_inches='tight',dpi=200, format='pdf')
 
-        if show[j]=='True':
-            plt.show()
+        #if show[j]=='True':
+        #    plt.show()
 
-        plt.close()
+        #plt.close()
 
         j+=1
+
+    if show[0]=='True':
+
+        plt.show()
+
+    plt.close('all')
 
     return 
 
 def diurnal_cycle_mpas_parallel(exp,di,df,variables,exp2=[],variables2=[],exp3=[],variables3=[],era5=[],vars_era5=[],explabel1=[],explabel2=[],lev=[],lim=[],var21=[],var22=[],var23=[],v2era5=[],color=[],leg_loc=[],diurnal=[],show=[],step_era5=False): 
+
+    lim_copy = copy.deepcopy(lim)
 
     #Date to referece
     year   =2024
@@ -505,8 +581,8 @@ def diurnal_cycle_mpas_parallel(exp,di,df,variables,exp2=[],variables2=[],exp3=[
 
         if lim:
 
-            lim[j][0]=dt.datetime.strptime(lim[j][0], date_format)
-            lim[j][1]=dt.datetime.strptime(lim[j][1], date_format)
+            lim_copy[j][0]=dt.datetime.strptime(lim_copy[j][0], date_format)
+            lim_copy[j][1]=dt.datetime.strptime(lim_copy[j][1], date_format)
 
 
         i=0
@@ -560,14 +636,15 @@ def diurnal_cycle_mpas_parallel(exp,di,df,variables,exp2=[],variables2=[],exp3=[
                 var2    =   variables2[j]
 
                 try:
-                    var2plot=ex2[var2][n0:n1,0].values
+                    #var2plot=ex2[var2][n0:n1,0].values
+                    var2plot=ex2[var2][n0:n1,0,0]#.values
                 except:
-                    var2plot=ex2[var2][n0:n1].values
+                    var2plot=ex2[var2][n0:n1]#.values
 
 
                 var2plot=   var2plot*var22[j]
 
-                val_all.append(var2plot)
+                var_all.append(var2plot)
                 
                 mean,hours   =   diurnal_main(var_all)
 
@@ -584,7 +661,12 @@ def diurnal_cycle_mpas_parallel(exp,di,df,variables,exp2=[],variables2=[],exp3=[
                 n0,n1   =   down.data_n(di,df,ex3.ltime.values.astype('datetime64[s]'))
 
                 var3     =   variables3[j]
-                var3plot =   ex3[var3][n0:n1,0,0]#.values
+
+                try:
+                    var3plot=ex3[var3][n0:n1,0,0]#.values
+                except:
+                    var3plot=ex3[var3][n0:n1].values
+
                 var3plot =   var3plot*var23[j]
 
                 var_all.append(var3plot)
@@ -623,6 +705,8 @@ def diurnal_cycle_mpas_parallel(exp,di,df,variables,exp2=[],variables2=[],exp3=[
     if show[0]=='True':
 
         plt.show()
+
+    plt.close('all')
 
     return 
 
@@ -836,7 +920,7 @@ def temporal_ex_hours_mpas(exp,exp2,exp3,di,df,variables,variables2,variables3,e
         for ex2 in exp2: 
 
             #n0,n1   =   down.data_n(di+dt.timedelta(hours=-0),df,ex2.ltime.values.astype('datetime64[s]'))
-            n0,n1   =   down.data_n(di,df,ex2.ltime.values.astype('datetime64[s]'))
+            n0,n1   =   down.data_n(di,df,ex2.time.values.astype('datetime64[s]'))
 
             var2    =   variables2[j]
 
@@ -858,7 +942,7 @@ def temporal_ex_hours_mpas(exp,exp2,exp3,di,df,variables,variables2,variables3,e
 
         for ex3 in exp3: 
 
-            n0,n1   =   down.data_n(di,df,ex3.ltime.values.astype('datetime64[s]'))
+            n0,n1   =   down.data_n(di,df,ex3.time.values.astype('datetime64[s]'))
 
 
             var3     =   variables3[j]

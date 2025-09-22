@@ -348,11 +348,6 @@ def mean_all_exps_sam_xr(exp,variables,date,name=[],explabel1=[],explabel2=[],ke
             #if temporal[0][j]:
 
             figs,axis,axis2=fown.temporal(figs,axis,meanxt,temporal[1::])
-        #print(leg_locu[5][0])
-        #if(leg_locu[5][0]):
-
-        #    figs,axis=fown.base_top_cloud(figs,axis,meanxt)
-
         if not key:
 
             figs.savefig('%s/mean_all_2d_%s.pdf'%(pars.out_fig,fig_label),bbox_inches='tight',dpi=200, format='pdf')
@@ -372,24 +367,150 @@ def mean_all_exps_sam_xr(exp,variables,date,name=[],explabel1=[],explabel2=[],ke
 
     return 
 
-def mean_box_sam_xr(exp,variables,date,name=[],explabel1=[],explabel2=[],key=[],alt=[],contour=[],var_to=[],color=[],leg_loc=[],show=[],temporal=[]):
+def mean_box_var_sam_xr(exp,variables,date,name=[],explabel1=[],explabel2=[],key=[],alt=[],contour=[],var_to=[],color=[],leg_loc=[],show=[],temporal=None):
 
     print("_mean_les__%s__"%(name))
 
+
+    if temporal is None: temporal = []
+
+
+    if temporal: 
+
+        goamz_all,binned_amz=group_by_hour_goamz_xr(temporal[0],temporal[1])
+
+        var_amz=temporal[2]
+
+        k =0
+        tobox_amz=[]
+        mean_amz=[]
+        time_amz=[]
+        for name, group in binned_amz:
+
+            if k>-1:
+                print(f"Group Key: {name}")
+                
+                data=binned_amz[name][var_amz].to_dataframe().reset_index()
+                data['timedt']=data.time.dt.time
+
+                toplot_amz=group[var_amz] 
+
+                tobox_amz.append(data)
+
+                #mean1 =toplot_amz.mean() 
+                #mean_amz.append(mean1)
+                #time_amz.append(toplot_amz.time[0].values)
+
+            k+=1
+
+
+        #plt.plot(time_amz,mean_amz)
+        #plt.show()
+        #exit()
+
+        toboxall_amz = pd.concat(tobox_amz, ignore_index=True)
+
+        toboxall_amz["time_str"] = toboxall_amz["time"].dt.strftime("%H:00")
+
+
+    #mean the exp
+    mean_all,binned=group_by_hour_xr(exp,date)
+
+
+
+    i=0
+    for var in variables:
+
+        k =0
+        tobox=[]
+        for name, group in binned:
+
+            if k==5:
+                print(f"Group Key: {name}")
+                
+                data=binned[name][var].to_dataframe().reset_index()
+
+                data['time']=data.time
+
+                data['timedt']=data.time.dt.time
+
+                toplot=group[var] 
+
+                tobox.append(data)
+
+                k=0
+            k+=1
+
+        toboxall = pd.concat(tobox, ignore_index=True)
+
+        contouru,altu,var_tou,coloru,explabel1u,explabel2u,leg_locu,showu=df.default_values_sam_box(toboxall,var,contour,alt,var_to,color,explabel1,explabel2,leg_loc,show,0,i)
+
+        toboxall[var] = toboxall[var]*var_tou
+
+        size_wg = leg_locu[6][0]
+        size_hf = leg_locu[6][1]
+        cmas    = leg_locu[6][2]
+
+        tama= pp.plotsize(size_wg,size_hf, cmas,pars.plotdef)
+
+        fig = plt.figure()
+        ###New axis
+        ax  = plt.axes()
+
+        toboxall["time_str"] = toboxall["time"].dt.strftime("%H:00")
+
+
+        sns.boxplot(data=toboxall, x='time_str', y=var,palette=coloru, notch=False, showcaps=False, width=0.5,linewidth='1',
+        flierprops={"marker": "x"},
+        medianprops={"color": "coral"},)
+
+        if temporal: 
+
+            tobox = pd.concat([toboxall, toboxall_amz], ignore_index=True)
+        
+            #sns.pointplot(data=toboxall_amz, x='time_str', y=var_amz,dodge=True, join=False)#3, notch=False, showcaps=False, width=0.5,linewidth='1',
+            plt1=sns.pointplot(data=tobox, x='time_str', y=var_amz ,dodge=True, join=False, linewidth=0.1,color='blue',markers=['*'],markerssize=[0.2] ,errorbar=None,ci=None,line_kws={"alpha": 0.5},scatter_kws={"alpha": 0.5})    # markers)#3, notch=False, showcaps=False, width=0.5,linewidth='1',
+
+            plt.setp(plt1.collections, alpha=0.3)  # For markers
+
+        ax.set_ylim([altu[0],altu[1]])
+
+        ax.yaxis.set_major_locator(plt.MultipleLocator(altu[2]))
+
+        ax=fown.label_plots(toboxall['time'],ax,leg_locu,explabel1u,explabel2u,tama)
+
+        plt.grid(True, axis="y", linestyle="--", alpha=0.6)
+        plt.show()
+
+        exit()
+
+        fig_label='les_var_box_plot'+'_'+var+'_'+key
+
+        fig.savefig('%s/%s.pdf'%(pars.out_fig,fig_label),bbox_inches='tight',dpi=200, format='pdf')
+
+        i+=1
+
+
+    if show[0]:
+
+        plt.show()
+    
+    plt.close('all')
+
+    return 
+
+def group_by_hour_goamz_xr(ex,date):
+
     k=0
     mean=[]
-    for ex in exp:
-
-        print("___________________")
-        print("__%s__"%(ex.name))
-        print("___________________")
+    for day in date:
 
         date_format = '%Y-%m-%dT%H'
-        datei=dt.datetime.strptime(date[k][0], date_format)
-        datef=dt.datetime.strptime(date[k][1], date_format)
+        datei=dt.datetime.strptime(day[0], date_format)
+        datef=dt.datetime.strptime(day[1], date_format)
 
-        time1 = np.datetime64(date[k][0]) 
-        time2 = np.datetime64(date[k][1])
+        time1 = np.datetime64(day[0]) 
+        time2 = np.datetime64(day[1])
 
         ni,nf=down.data_n(time1,time2,ex.time.values) 
         tovar= ex.sel(time=slice(ex.time[ni],ex.time[nf]))
@@ -399,18 +520,11 @@ def mean_box_sam_xr(exp,variables,date,name=[],explabel1=[],explabel2=[],key=[],
 
         mean.append(tovar)
 
-
-        #if name:
-        name    =   str(ex.name.values)#+'_'+dates[0]
-
         k+=1
 
 
-    #print(tovar.time)
-
 
     mean_all=xr.concat(mean,dim='time')#,dim='new') 
-
 
     #print(mean_all.time[:])
 
@@ -480,115 +594,309 @@ def mean_box_sam_xr(exp,variables,date,name=[],explabel1=[],explabel2=[],key=[],
     #    print(group['ZCB'].values)
     #
 
+    return mean_all,binned
+
+
+def group_by_hour_xr(exp,date):
+
+    k=0
+    mean=[]
+    for ex in exp:
+
+        print("___________________")
+        print("__%s__"%(ex.name))
+        print("___________________")
+
+        date_format = '%Y-%m-%dT%H'
+        datei=dt.datetime.strptime(date[k][0], date_format)
+        datef=dt.datetime.strptime(date[k][1], date_format)
+
+        time1 = np.datetime64(date[k][0]) 
+        time2 = np.datetime64(date[k][1])
+
+        ni,nf=down.data_n(time1,time2,ex.time.values) 
+        tovar= ex.sel(time=slice(ex.time[ni],ex.time[nf]))
+
+        #ni,nf=down.data_n(time1,time2,ex.time.values) 
+        #tovar= ex.sel(ltime=slice(ex.ltime[ni],ex.ltime[nf]))
+
+        mean.append(tovar)
+
+
+        #if name:
+        name    =   str(ex.name.values)#+'_'+dates[0]
+
+        k+=1
+
+
+
+    mean_all=xr.concat(mean,dim='time')#,dim='new') 
+
+    #print(mean_all.time[:])
+
+    #make a grup with all with the same time, no date, time is hours, seconds...
+
+    #toplot=mean_all.groupby('time.time')
+
+    #toplot = mean_all.resample(time="10M")
+
+
+    #mean_all = mean_all.assign_coords(
+
+    #time_of_day = mean_all['time'].dt.floor("120s").time  # or "1s", "5min")
+    #toplot = mean_all.groupby("time_of_day.time")
+
+    #print(mean_all.time_of_day[:])
+
+    #exit()
+
+    #"""
+    # seconds since midnight
+    secs = (mean_all["time"].dt.hour * 3600
+            + mean_all["time"].dt.minute * 60
+            + mean_all["time"].dt.second)
+    
+    # tolerance in minutes
+    tol_minutes = 2
+    bin_size = tol_minutes * 60  # in seconds
+    
+    # create bins 0–86400
+    bins = np.arange(0, 24*3600 + bin_size, bin_size)
+    #this because a each 2 minutes in 24 hours, the seconds will be fall in 
+    # some bin
+
+    # assign bin index (integer) to each time
+
+    #is the proper way to assign each timestamp to a bin index
+    #np.digitize returns indices starting at 1, so we subtract 1 to make it 0-based.
+
+    #The last value of secs might exactly equal bins[-1] (24*3600), which would give an index len(bins). To prevent an out-of-bounds error, we set those to len(bins)-2.
+    bin_idx = np.digitize(secs, bins) - 1  # subtract 1 to make 0-indexed
+
+    # assign to dataset
+    mean_all = mean_all.assign_coords(time_of_day_bin=("time", bin_idx))
+    
+    # Optional: get bin start times as timedelta
+    bin_start_times = pd.to_timedelta(bins[bin_idx], unit='s')
+    mean_all = mean_all.assign_coords(time_of_day_dt=("time", bin_start_times))
+
+    # Optional: convert to pandas Timestamp on a dummy date (say 2000-01-01)
+    time_of_day_datetime = pd.Timestamp("2000-01-01") + bin_start_times
+    
+    # Assign back to dataset
+    mean_all = mean_all.assign_coords(
+        time_of_day_dt=("time", time_of_day_datetime)
+    )
+
+    # Example: compute mean ZCB per time-of-day bin
+    binned = mean_all.groupby("time_of_day_bin")
+
+    #for key, group in binned:
+
+    #    print("First key:", key)
+    #    first_group = group
+    #    #this was the dimension to group, does not change, show all
+    #    print(group.time_of_day_dt.values)
+    #    print(group['ZCB'].values)
+    #
+
+    return mean_all,binned
+
+
+def mean_box_sam_xr(exp,variables,date,name=[],explabel1=[],explabel2=[],key=[],alt=[],contour=[],var_to=[],color=[],leg_loc=[],show=[],temporal=[]):
+
+    print("_mean_les__%s__"%(name))
+
+    if temporal is None: temporal = []
+
+    if temporal: 
+
+        goamz_all,binned_amz=group_by_hour_goamz_xr(temporal[0],temporal[1])
+
+
+    #grouped by hours 
+    mean_all,binned=group_by_hour_xr(exp,date)
+
+    k =0
+    tobox=[]
+    for name, group in binned:
+
+        # Make a boxplot
+        if k==5:
+            print(f"Group Key: {name}")
+            #extrac the variable, if not it is very slowly
+            #data=binned[name][var].to_dataframe().reset_index()
+            #toplot=group['ZCB'] 
+            #print(group['time'],group['ZCB']) 
+            #print('xxxx') 
+            
+            data=group[['ZCTMAX','ZCBMIN']]
+            data['timedt']=data.time.dt.time
+
+            #data=group['ZCT']
+            ##data['time']=data.time
+            #data['timedt']=data.time.dt.time
+            #data['ZCB']=group['ZCB']
+
+            tobox.append(data.to_dataframe().reset_index())
+
+            k=0
+        k+=1
+
+    toboxall     = pd.concat(tobox  , ignore_index=True)
+    toboxall["time_str"] = toboxall["time"].dt.strftime("%H:00")
+
+    var_amz=[]
+    k=0
+    for name, group in binned_amz:
+
+        #if k>2:
+        if k>-1:
+
+            data_amz             =group[['cld_top','cld_thick']]-0. 
+            data_amz['cld_base' ]=group['cld_top']-group['cld_thick']-0.2
+            data_amz['timedt']   =data_amz.time.dt.time
+            data_amz["time_str"] =data_amz.time.dt.strftime("%H:00")
+
+            var_amz.append(data_amz.to_dataframe().reset_index())
+
+
+        if k>8:
+            break
+        k+=1
+
+
+    toboxall_amz = pd.concat(var_amz, ignore_index=True)
+
+    #order = sorted(toboxall["time_of_day_dt"].unique())
+    #toboxall_amz["time_str"] = toboxall_amz["time"].dt.strftime("%H:00")
+
+
+    tobox_joined = pd.concat([toboxall, toboxall_amz], ignore_index=True)
+
+    #order_bins = (
+    #toboxall[["time_of_day_bin", "time_of_day_dt"]]
+    #.drop_duplicates()
+    #.sort_values("time_of_day_bin")
+    #)
+
+    #bin_order = order_bins["time_of_day_dt"]
+
+    #bin_order = sorted(
+    #set(toboxall["time_of_day_bin"]).union(toboxall_amz["time_of_day_bin"]))
+
+
+    #print(toboxall_amz)
+
 
     i=0
-    for var in variables:
+    var=variables[0]
 
 
-        k =0
-        tobox=[]
-        for name, group in binned:
+    contouru,altu,var_tou,coloru,explabel1u,explabel2u,leg_locu,showu=df.default_values_sam_box(toboxall,var,contour,alt,var_to,color,explabel1,explabel2,leg_loc,show,0,i)
 
-            # Make a boxplot
-            if k==5:
-                print(f"Group Key: {name}")
+    #toboxall[var] = toboxall[var]*var_tou
+    #Data to plot 
+    #used user parameter to plot(plotparameter.py
+    #mpl.rcParams.update(params_2d)
 
-                #extrac the variable, if not it is very slowly
-                #data=binned[name][var].to_dataframe().reset_index()
-                #toplot=group['ZCB'] 
-                #print(group['time'],group['ZCB']) 
-                #print('xxxx') 
-                
-                data=binned[name][var].to_dataframe().reset_index()
+    size_wg = leg_locu[6][0]
+    size_hf = leg_locu[6][1]
+    cmas    = leg_locu[6][2]
 
-                data['time']=data.time
-
-                data['timedt']=data.time.dt.time
+    tama= pp.plotsize(size_wg,size_hf, cmas,pars.plotdef)
 
 
-                toplot=group[var] 
-
-                tobox.append(data)
-
-                k=0
-            #print('yyyyy') 
-            k+=1
-
-        toboxall = pd.concat(tobox, ignore_index=True)
-
-        contouru,altu,var_tou,coloru,explabel1u,explabel2u,leg_locu,showu=df.default_values_sam_box(toboxall,var,contour,alt,var_to,color,explabel1,explabel2,leg_loc,show,0,i)
-
-        toboxall[var] = toboxall[var]*var_tou
-        #Data to plot 
-        #used user parameter to plot(plotparameter.py
-        #mpl.rcParams.update(params_2d)
-
-        size_wg = leg_locu[6][0]
-        size_hf = leg_locu[6][1]
-        cmas    = leg_locu[6][2]
-
-        tama= pp.plotsize(size_wg,size_hf, cmas,pars.plotdef)
+    ################################3
+    fig = plt.figure()
+    ###New axis
+    ax  = plt.axes()
 
 
-        if i==0:
-        ################################3
-            fig = plt.figure()
-            ###New axis
-            ax  = plt.axes()
+    #using the bin_order:this usually happens because the axis category order is being set by the first plot call and/or because the order list was built from only one dataframe. Make the union of bins from both dataframes, use it as the order for both plots, and draw them on the same Axes (with the boxplot first so it pins the categories). Also plot by the bin itself (not the formatted time) and relabel ticks.
+    #print(toboxall["time_str"])
+    #sns.pointplot(data=toboxall_amz, x='time_of_day_bin', y='cld_top' ,order=bin_order,dodge=True, join=True, linewidth=0.1,color='red',markers=['*'],markerssize=[0.2] ,errorbar=None,ci=None)#3, notch=False, showcaps=False, width=0.5,linewidth='1',
+    #sns.pointplot(data=toboxall_amz, x='time_of_day_bin', y='cld_base',order=bin_order ,dodge=True, join=True, linewidth=0.1,color='blue',markers=['v'] ,errorbar=None,ci=None)#
 
-        toboxall["time_str"] = toboxall["time"].dt.strftime("%H:00")
+    #sns.boxplot(data=toboxall, x='time_of_day_bin', y='ZCBMIN',order=bin_order ,palette='Blues', notch=False, showcaps=False, width=0.5,linewidth='1',
+    ##sns.boxplot(data=toboxall, x='time_str', y='ZCB',palette='Blues', notch=False, showcaps=False, width=0.5,linewidth='1',
+    #flierprops={"marker": "x"},
+    ##boxprops={"facecolor": (.4, .6, .8, .5)},
+    #medianprops={"color": "coral"},)
 
-        #print(toboxall["time_str"])
+    #sns.boxplot(data=toboxall, x='time_of_day_bin', y='ZCTMAX',order=bin_order ,palette='Reds' , notch=False, showcaps=False, width=0.5,linewidth='1',
+    ##sns.boxplot(data=toboxall, x='time_str', y='ZCT',palette='Reds' , notch=False, showcaps=False, width=0.5,linewidth='1',
+    #flierprops={"marker": "x"},
+    ##boxprops={"facecolor": (.4, .6, .8, .5)},
+    #medianprops={"color": "coral"},)
 
+    #to use source!
+    #sns.boxplot(
+    #data=tobox_joined[tobox_joined["source"] == "all"],
+    #x="time_of_day_bin", y="ZCBMIN",
+    #order=bin_order,
+    #palette="Blues", notch=False, showcaps=False, width=0.5, linewidth=1,
+    #flierprops={"marker": "x"},
+    #medianprops={"color": "coral"},
+    #ax=ax,)
 
-        sns.boxplot(data=toboxall, x='time_str', y=var,palette=coloru, notch=False, showcaps=False, width=0.5,linewidth='1',
+    plt1=sns.pointplot(data=tobox_joined, x='time_str', y='cld_top' ,dodge=True, join=False, linewidth=0.1,color='red',markers=['*'],markerssize=[0.2] ,errorbar=None,ci=None,line_kws={"alpha": 0.5},scatter_kws={"alpha": 0.5})    # markers)#3, notch=False, showcaps=False, width=0.5,linewidth='1',
+    plt2=sns.pointplot(data=tobox_joined, x='time_str', y='cld_base' ,dodge=True, join=False, linewidth=0.1,color='blue',markers=['v'] ,errorbar=None,ci=None)#
+
+    sns.boxplot(data=tobox_joined, x='time_str', y='ZCBMIN' ,palette='Blues', notch=False, showcaps=False, width=0.5,linewidth='1',
+    #sns.boxplot(data=toboxall, x='time_str', y='ZCB',palette='Blues', notch=False, showcaps=False, width=0.5,linewidth='1',
     flierprops={"marker": "x"},
     #boxprops={"facecolor": (.4, .6, .8, .5)},
     medianprops={"color": "coral"},)
-        #sns.boxplot(data=toboxall, x='time_str', y=var,palette=coloru)
-        #diverging_c = sns.diverging_palette(coloru[0], coloru[1] ,as_cmap=False) # Or as_cmap=True for a colormap
-        #sns.boxplot(data=toboxall, x='time_str', y=var,palette=diverging_c)
 
-        #ax.xaxis_date()
+    sns.boxplot(data=tobox_joined, x='time_str', y='ZCTMAX' ,palette='Reds' , notch=False, showcaps=False, width=0.5,linewidth='1',
+    #sns.boxplot(data=toboxall, x='time_str', y='ZCT',palette='Reds' , notch=False, showcaps=False, width=0.5,linewidth='1',
+    flierprops={"marker": "x"},
+    #boxprops={"facecolor": (.4, .6, .8, .5)},
+    medianprops={"color": "coral"},)
 
-        #date_form = mdates.DateFormatter("%H" )
-        #ax.xaxis.set_major_formatter(date_form)
 
-        #locatormax = mdates.HourLocator(interval=2)
-        #locatormin = mdates.HourLocator(interval=1)
-        #ax.xaxis.set_minor_locator(locatormin)
-        #ax.xaxis.set_major_locator(locatormax)
+    # Adjust transparency of lines and markers
+    plt.setp(plt1.collections, alpha=0.3)  # For markers
+    #plt.setp(plt1.lines, alpha=0.5)      # For lines
 
-        ax.set_ylim([altu[0],altu[1]])
+    #ax.xaxis_date()
 
-        ax.yaxis.set_major_locator(plt.MultipleLocator(1.0))
+    #date_form = mdates.DateFormatter("%H" )
+    #ax.xaxis.set_major_formatter(date_form)
 
-        ax=fown.label_plots(toboxall['time'],ax,leg_locu,explabel1u,explabel2u,tama)
+    #locatormax = mdates.HourLocator(interval=2)
+    #locatormin = mdates.HourLocator(interval=1)
+    #ax.xaxis.set_minor_locator(locatormin)
+    #ax.xaxis.set_major_locator(locatormax)
 
-        # Define custom colors and labels for the legend
-        colors = ['lightblue','lightcoral' ]
-        labels = [r'Cloud Top',r'Cloud Base']
-        
-        # Create proxy artists for the legend
-        patches = [mpatches.Patch(color=colors[i], label=labels[i]) for i in range(len(labels))]
-        
-        # Apply colors to the boxes (optional, but demonstrates matching legend to plot)
-        for i, patch in enumerate(ax.artists):
-            patch.set_facecolor(colors[i])
-        
-        # Add the custom legend
-        ax.legend(handles=patches, frameon=False, fontsize=tama)
-        
+    ax.set_ylim([altu[0],altu[1]])
 
-        plt.grid(True, axis="y", linestyle="--", alpha=0.6)
+    ax.yaxis.set_major_locator(plt.MultipleLocator(1.0))
 
-        fig_label='les_box_plot'+'_'+var+'_'+key
 
-        if i==0:
+    ax=fown.label_plots(toboxall['time'],ax,leg_locu,explabel1u,explabel2u,tama)
 
-            fig.savefig('%s/%s.pdf'%(pars.out_fig,fig_label),bbox_inches='tight',dpi=200, format='pdf')
+    # Define custom colors and labels for the legend
+    colors = ['lightblue','lightcoral' ]
+    labels = [r'Cloud Top',r'Cloud Base']
+    
+    # Create proxy artists for the legend
+    patches = [mpatches.Patch(color=colors[i], label=labels[i]) for i in range(len(labels))]
+    
+    # Apply colors to the boxes (optional, but demonstrates matching legend to plot)
+    for i, patch in enumerate(ax.artists):
+        patch.set_facecolor(colors[i])
+    
+    # Add the custom legend
+    ax.legend(handles=patches, frameon=False, fontsize=tama)
 
-        i+=1
+    plt.grid(True, axis="y", linestyle="--", alpha=0.6)
+
+
+    fig_label='les_box_cloud_plot'+'_'+var+'_'+key
+
+    fig.savefig('%s/%s.pdf'%(pars.out_fig,fig_label),bbox_inches='tight',dpi=200, format='pdf')
 
 
     if show[0]:
